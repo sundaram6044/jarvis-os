@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>JARVIS OS</title>
+<style>
+/* ── TOKENS ── */
+:root {
+  --glass: rgba(255,255,255,0.07);
+  --glass-border: rgba(255,255,255,0.12);
+  --glass-hover: rgba(255,255,255,0.11);
+  --bg: #080810;
+  --bg2: #0c0c18;
+  --text: rgba(255,255,255,0.92);
+  --text-dim: rgba(255,255,255,0.45);
+  --text-faint: rgba(255,255,255,0.22);
+  --accent: rgba(255,255,255,0.85);
+  --blue: #4A9EFF;
+  --blue-dim: rgba(74,158,255,0.15);
+  --blue-glow: rgba(74,158,255,0.3);
+  --green: #34C759;
+  --red: #FF453A;
+  --yellow: #FFD60A;
+  --radius: 20px;
+  --radius-sm: 12px;
+  --blur: blur(32px);
+  --font: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  overflow: hidden;
+  width: 100vw; height: 100vh;
+  touch-action: none;
+  user-select: none;
+}
+
+/* ── BOOT SCREEN ── */
+#boot {
+  position: fixed; inset: 0;
+  background: #000;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  z-index: 1000;
+  transition: opacity 0.8s ease;
+}
+#boot.fade { opacity: 0; pointer-events: none; }
+
+.boot-logo {
+  width: 64px; height: 64px;
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05));
+  border: 1px solid rgba(255,255,255,0.15);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px;
+  margin-bottom: 28px;
+  box-shadow: 0 0 60px rgba(74,158,255,0.2);
+  animation: bootPulse 2s ease-in-out infinite;
+}
+@keyframes bootPulse { 0%,100%{box-shadow:0 0 40px rgba(74,158,255,0.15)} 50%{box-shadow:0 0 80px rgba(74,158,255,0.35)} }
+
+.boot-name {
+  font-size: 22px; font-weight: 300;
+  letter-spacing: 8px; color: rgba(255,255,255,0.9);
+  margin-bottom: 6px;
+}
+.boot-sub {
+  font-size: 11px; letter-spacing: 3px;
+  color: rgba(255,255,255,0.3); margin-bottom: 40px;
+}
+.boot-bar-track {
+  width: 120px; height: 2px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 2px; overflow: hidden;
+}
+.boot-bar-fill {
+  height: 100%; width: 0;
+  background: linear-gradient(90deg, var(--blue), rgba(255,255,255,0.8));
+  border-radius: 2px;
+  transition: width 0.1s linear;
+}
+
+/* ── AMBIENT BACKGROUND ── */
+#ambient {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  overflow: hidden;
+}
+.orb {
+  position: absolute; border-radius: 50%;
+  filter: blur(80px); opacity: 0.15;
+  animation: drift 20s ease-in-out infinite;
+}
+.orb1 { width:400px;height:400px;background:#1a3a6e;top:-100px;left:-80px;animation-delay:0s; }
+.orb2 { width:300px;height:300px;background:#0a2040;bottom:-80px;right:-60px;animation-delay:-8s; }
+.orb3 { width:200px;height:200px;background:#0d1f3c;top:40%;left:60%;animation-delay:-14s; }
+@keyframes drift {
+  0%,100%{transform:translate(0,0) scale(1)}
+  33%{transform:translate(30px,-20px) scale(1.05)}
+  66%{transform:translate(-20px,30px) scale(0.95)}
+}
+
+/* ── MAIN OS SHELL ── */
+#os {
+  position: fixed; inset: 0;
+  display: none; flex-direction: column;
+  z-index: 1;
+}
+#os.visible { display: flex; }
+
+/* ── STATUS BAR ── */
+#status-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 24px 8px;
+  font-size: 12px; font-weight: 500;
+  color: var(--text);
+  flex-shrink: 0;
+}
+.sb-left { display:flex; align-items:center; gap:6px; }
+.sb-right { display:flex; align-items:center; gap:12px; }
+.sb-time { font-size:15px; font-weight:600; letter-spacing:-0.3px; }
+.sb-date { font-size:11px; color:var(--text-dim); }
+.sb-icon { font-size:13px; opacity:0.8; }
+.battery-bar {
+  width:22px; height:11px; border:1.5px solid rgba(255,255,255,0.4);
+  border-radius:3px; position:relative; overflow:visible;
+}
+.battery-bar::after { content:''; position:absolute; right:-4px; top:50%; transform:translateY(-50%); width:2px; height:5px; background:rgba(255,255,255,0.4); border-radius:0 1px 1px 0; }
+.battery-fill { position:absolute; inset:2px; background:var(--green); border-radius:1px; width:70%; }
+
+/* ── HOME SPACE ── */
+#home {
+  flex: 1; display: flex; flex-direction: column;
+  padding: 0 20px 20px;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── GREETING ── */
+#greeting {
+  padding: 8px 4px 20px;
+}
+.greeting-hello {
+  font-size: 13px; font-weight: 400;
+  color: var(--text-dim); letter-spacing: 0.3px;
+  margin-bottom: 2px;
+}
+.greeting-name {
+  font-size: 28px; font-weight: 700;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.6) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+
+/* ── GLASS CARD ── */
+.glass-card {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  transition: background 0.2s, transform 0.15s;
+}
+.glass-card:active { background: var(--glass-hover); transform: scale(0.98); }
+
+/* ── SPOTLIGHT (JARVIS QUICK ASK) ── */
+#spotlight {
+  display: flex; align-items: center; gap: 10px;
+  padding: 13px 16px;
+  margin-bottom: 16px;
+  cursor: pointer;
+}
+.spotlight-icon { font-size: 16px; opacity: 0.6; flex-shrink: 0; }
+.spotlight-text { font-size: 14px; color: var(--text-dim); font-weight: 400; flex:1; }
+.spotlight-jarvis {
+  font-size: 11px; color: var(--blue);
+  background: var(--blue-dim);
+  padding: 3px 8px; border-radius: 20px;
+  font-weight: 500; letter-spacing: 0.2px;
+  flex-shrink: 0;
+}
+
+/* ── APP GRID ── */
+#app-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.app-tile {
+  aspect-ratio: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 7px; cursor: pointer;
+  position: relative; overflow: hidden;
+}
+.app-tile::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(145deg, rgba(255,255,255,0.05), transparent);
+  border-radius: var(--radius); pointer-events: none;
+}
+.app-icon {
+  width: 52px; height: 52px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+.app-name {
+  font-size: 10px; font-weight: 500;
+  color: var(--text-dim); letter-spacing: 0.2px;
+  text-align: center;
+}
+.app-badge {
+  position: absolute; top: 10px; right: 10px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--red); font-size: 9px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; border: 1.5px solid var(--bg);
+}
+
+/* App icon backgrounds */
+.ai-bg    { background: linear-gradient(145deg,#1a3a6e,#0d2040); }
+.vision-bg{ background: linear-gradient(145deg,#2d1a6e,#1a0d40); }
+.sense-bg { background: linear-gradient(145deg,#0d3a2d,#082018); }
+.map-bg   { background: linear-gradient(145deg,#3a1a1a,#200d0d); }
+.sys-bg   { background: linear-gradient(145deg,#1a2a1a,#0d180d); }
+.cam-bg   { background: linear-gradient(145deg,#2a2a0d,#181808); }
+
+/* ── WIDGETS ROW ── */
+#widgets {
+  display: flex; gap: 12px;
+  margin-bottom: 16px;
+}
+.widget { flex: 1; }
+.widget-sm { padding: 14px; }
+.widget-label {
+  font-size: 9px; font-weight: 600; letter-spacing: 1.5px;
+  color: var(--text-faint); text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.widget-value {
+  font-size: 22px; font-weight: 700;
+  letter-spacing: -0.5px; color: var(--text);
+  line-height: 1;
+}
+.widget-sub {
+  font-size: 10px; color: var(--text-dim);
+  margin-top: 3px; font-weight: 400;
+}
+.widget-ring {
+  width: 44px; height: 44px; position: relative;
+  margin: 0 auto 6px;
+}
+.ring-svg { transform: rotate(-90deg); }
+.ring-track { fill: none; stroke: rgba(255,255,255,0.08); stroke-width: 4; }
+.ring-fill { fill: none; stroke-width: 4; stroke-linecap: round; transition: stroke-dashoffset 1s ease; }
+
+/* ── SYSTEM STATUS CARD ── */
+#sys-card { padding: 14px 16px; }
+.sys-row {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.sys-row:last-child { border-bottom: none; padding-bottom: 0; }
+.sys-row-left { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-dim); }
+.sys-dot { width:6px;height:6px;border-radius:50%;flex-shrink:0; }
+.sys-row-right { font-size:12px; font-weight:500; color:var(--text); }
+
+/* ── DOCK ── */
+#dock {
+  display: flex; justify-content: center;
+  padding: 10px 20px 24px;
+  flex-shrink: 0;
+}
+.dock-inner {
+  display: flex; gap: 16px; align-items: center;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 28px;
+  padding: 10px 20px;
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+}
+.dock-btn {
+  width: 50px; height: 50px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; cursor: pointer;
+  transition: transform 0.15s, background 0.15s;
+  position: relative;
+}
+.dock-btn:active { transform: scale(0.88); }
+.dock-divider { width:1px; height:34px; background:rgba(255,255,255,0.1); }
+
+/* ── OVERLAY PANELS ── */
+.panel-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; align-items: flex-end;
+  padding: 0;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s;
+  background: rgba(0,0,0,0);
+}
+.panel-overlay.open {
+  opacity: 1; pointer-events: all;
+  background: rgba(0,0,0,0.4);
+}
+.panel-sheet {
+  width: 100%; max-height: 80vh;
+  background: rgba(18,18,28,0.96);
+  border: 1px solid var(--glass-border);
+  border-bottom: none;
+  border-radius: var(--radius) var(--radius) 0 0;
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.2,0.8,0.2,1);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.panel-overlay.open .panel-sheet { transform: translateY(0); }
+.panel-handle {
+  width: 36px; height: 4px; border-radius: 2px;
+  background: rgba(255,255,255,0.2);
+  margin: 12px auto 0;
+}
+.panel-title-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+.panel-title { font-size: 17px; font-weight: 600; }
+.panel-close {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: rgba(255,255,255,0.1); border: none;
+  color: var(--text-dim); font-size: 14px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.panel-body { padding: 20px; overflow-y: auto; flex: 1; }
+
+/* ── JARVIS CHAT PANEL ── */
+#chat-messages {
+  display: flex; flex-direction: column; gap: 10px;
+  margin-bottom: 12px; max-height: 40vh; overflow-y: auto;
+}
+#chat-messages::-webkit-scrollbar { width: 0; }
+.bubble {
+  max-width: 82%; padding: 10px 14px;
+  border-radius: 18px; font-size: 14px; line-height: 1.5;
+  animation: bubbleIn 0.2s ease;
+}
+@keyframes bubbleIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+.bubble-user {
+  align-self: flex-end;
+  background: var(--blue);
+  color: #fff; border-bottom-right-radius: 5px;
+}
+.bubble-jarvis {
+  align-self: flex-start;
+  background: rgba(255,255,255,0.09);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text); border-bottom-left-radius: 5px;
+}
+.bubble-thinking { opacity: 0.5; font-style: italic; }
+.chat-input-row {
+  display: flex; gap: 8px; align-items: center;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 24px; padding: 6px 6px 6px 16px;
+}
+#chat-input {
+  flex: 1; background: transparent; border: none; outline: none;
+  color: var(--text); font-size: 14px; font-family: var(--font);
+}
+#chat-input::placeholder { color: var(--text-faint); }
+#chat-send, #chat-mic {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; flex-shrink: 0;
+  transition: transform 0.15s;
+}
+#chat-send { background: var(--blue); color: #fff; }
+#chat-mic  { background: rgba(255,255,255,0.1); color: var(--text); }
+#chat-send:active, #chat-mic:active { transform: scale(0.88); }
+
+/* ── SETTINGS PANEL ── */
+.setting-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.setting-row:last-child { border-bottom: none; }
+.setting-left { display:flex; align-items:center; gap:12px; }
+.setting-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px;
+}
+.setting-text { font-size: 14px; color: var(--text); }
+.setting-sub  { font-size: 11px; color: var(--text-dim); margin-top:1px; }
+.toggle {
+  width: 44px; height: 26px; border-radius: 13px;
+  background: rgba(255,255,255,0.15); position: relative;
+  cursor: pointer; transition: background 0.25s;
+  border: none; flex-shrink: 0;
+}
+.toggle.on { background: var(--blue); }
+.toggle::after {
+  content: ''; position: absolute;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: #fff; top: 2px; left: 2px;
+  transition: left 0.25s; box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+.toggle.on::after { left: 20px; }
+.setting-value { font-size: 13px; color: var(--text-dim); }
+
+/* ── VOICE INDICATOR ── */
+#voice-indicator {
+  position: fixed; bottom: 100px; left: 50%;
+  transform: translateX(-50%);
+  background: rgba(18,18,28,0.95);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 28px; padding: 12px 20px;
+  display: flex; align-items: center; gap: 10px;
+  z-index: 200; opacity: 0; pointer-events: none;
+  transition: opacity 0.25s; backdrop-filter: blur(40px);
+}
+#voice-indicator.show { opacity: 1; }
+.voice-waves { display:flex; gap:3px; align-items:center; height:20px; }
+.voice-wave {
+  width: 3px; border-radius: 2px;
+  background: var(--blue);
+  animation: wave 0.8s ease-in-out infinite;
+}
+.voice-wave:nth-child(1){height:6px;animation-delay:0s}
+.voice-wave:nth-child(2){height:14px;animation-delay:0.1s}
+.voice-wave:nth-child(3){height:20px;animation-delay:0.2s}
+.voice-wave:nth-child(4){height:12px;animation-delay:0.3s}
+.voice-wave:nth-child(5){height:8px;animation-delay:0.4s}
+@keyframes wave { 0%,100%{transform:scaleY(0.4)} 50%{transform:scaleY(1)} }
+.voice-label { font-size: 13px; color: var(--text); font-weight: 500; }
+
+/* ── NOTIFICATION TOAST ── */
+#toast {
+  position: fixed; top: 60px; left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  background: rgba(18,18,28,0.96);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 16px; padding: 12px 16px;
+  display: flex; align-items: center; gap: 10px;
+  z-index: 300; opacity: 0; pointer-events: none;
+  transition: opacity 0.25s, transform 0.25s;
+  backdrop-filter: blur(40px); max-width: 90vw;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast-icon { font-size: 20px; flex-shrink: 0; }
+.toast-text { font-size: 13px; color: var(--text); font-weight: 500; line-height: 1.4; }
+
+/* ── CONTROL CENTRE ── */
+#control-centre {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 10px; padding: 16px 20px;
+}
+.cc-tile {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: var(--radius-sm);
+  padding: 14px; cursor: pointer;
+  transition: background 0.2s;
+}
+.cc-tile:active { background: rgba(255,255,255,0.14); }
+.cc-tile.active { background: var(--blue-dim); border-color: rgba(74,158,255,0.3); }
+.cc-tile-icon { font-size: 20px; margin-bottom: 6px; }
+.cc-tile-name { font-size: 12px; font-weight: 600; color: var(--text); }
+.cc-tile-state { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+.cc-wide { grid-column: span 2; }
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+.fade-up { animation: fadeUp 0.5s ease forwards; }
+.delay-1 { animation-delay: 0.05s; opacity:0; }
+.delay-2 { animation-delay: 0.10s; opacity:0; }
+.delay-3 { animation-delay: 0.15s; opacity:0; }
+.delay-4 { animation-delay: 0.20s; opacity:0; }
+.delay-5 { animation-delay: 0.25s; opacity:0; }
+</style>
+</head>
+<body>
+
+<!-- AMBIENT -->
+<div id="ambient"><div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div></div>
+
+<!-- BOOT SCREEN -->
+<div id="boot">
+  <div class="boot-logo">⬡</div>
+  <div class="boot-name">JARVIS</div>
+  <div class="boot-sub">OPERATING SYSTEM · v1.0</div>
+  <div class="boot-bar-track"><div class="boot-bar-fill" id="boot-fill"></div></div>
+</div>
+
+<!-- OS SHELL -->
+<div id="os">
+
+  <!-- STATUS BAR -->
+  <div id="status-bar">
+    <div class="sb-left">
+      <span class="sb-time" id="sb-time">00:00</span>
+    </div>
+    <div class="sb-right">
+      <span class="sb-icon">📶</span>
+      <span class="sb-icon">🛜</span>
+      <div class="battery-bar"><div class="battery-fill"></div></div>
+    </div>
+  </div>
+
+  <!-- HOME -->
+  <div id="home">
+
+    <!-- GREETING -->
+    <div id="greeting" class="fade-up delay-1">
+      <div class="greeting-hello" id="greeting-sub">Good morning</div>
+      <div class="greeting-name">Sundaram</div>
+    </div>
+
+    <!-- SPOTLIGHT / JARVIS QUICK ASK -->
+    <div class="glass-card fade-up delay-2" id="spotlight" onclick="openPanel('chat')">
+      <span class="spotlight-icon">🔍</span>
+      <span class="spotlight-text">Ask JARVIS anything…</span>
+      <span class="spotlight-jarvis">AI</span>
+    </div>
+
+    <!-- APP GRID -->
+    <div id="app-grid">
+      <div class="glass-card app-tile fade-up delay-2" onclick="openPanel('chat')">
+        <div class="app-icon ai-bg">🤖</div>
+        <div class="app-name">JARVIS AI</div>
+      </div>
+      <div class="glass-card app-tile fade-up delay-2" onclick="openPanel('vision')">
+        <div class="app-icon vision-bg">👁</div>
+        <div class="app-name">Vision</div>
+        <div class="app-badge">!</div>
+      </div>
+      <div class="glass-card app-tile fade-up delay-3" onclick="openPanel('sensors')">
+        <div class="app-icon sense-bg">📡</div>
+        <div class="app-name">Sensors</div>
+      </div>
+      <div class="glass-card app-tile fade-up delay-3" onclick="openPanel('map')">
+        <div class="app-icon map-bg">🗺</div>
+        <div class="app-name">Space Map</div>
+      </div>
+      <div class="glass-card app-tile fade-up delay-4" onclick="openPanel('system')">
+        <div class="app-icon sys-bg">⚙️</div>
+        <div class="app-name">System</div>
+      </div>
+      <div class="glass-card app-tile fade-up delay-4" onclick="openPanel('camera')">
+        <div class="app-icon cam-bg">📷</div>
+        <div class="app-name">Camera</div>
+      </div>
+      <div class="glass-card app-tile fade-up delay-4" onclick="openPanel('health')">
+        <div class="app-icon" style="background:linear-gradient(145deg,#3a0d1a,#200810)">❤️</div>
+        <div class="app-name">Health</div>
+      </div>
+      <div class="glass-card app-tile fade-up delay-5" onclick="openPanel('notes')">
+        <div class="app-icon" style="background:linear-gradient(145deg,#2a1a0d,#180e08)">📝</div>
+        <div class="app-name">Notes</div>
+      </div>
+      <div class="glass-card app-tile fade-up delay-5" onclick="openPanel('weather')">
+        <div class="app-icon" style="background:linear-gradient(145deg,#0d1f3a,#081018)">🌤</div>
+        <div class="app-name">Environment</div>
+      </div>
+    </div>
+
+    <!-- WIDGETS -->
+    <div id="widgets" class="fade-up delay-4">
+      <!-- SYSTEM STATUS -->
+      <div class="glass-card widget" id="sys-card">
+        <div class="widget-label">System</div>
+        <div class="sys-row">
+          <div class="sys-row-left"><div class="sys-dot" style="background:var(--green)"></div>AI Core</div>
+          <div class="sys-row-right">Online</div>
+        </div>
+        <div class="sys-row">
+          <div class="sys-row-left"><div class="sys-dot" style="background:var(--green)"></div>Vision</div>
+          <div class="sys-row-right">Ready</div>
+        </div>
+        <div class="sys-row">
+          <div class="sys-row-left"><div class="sys-dot" style="background:var(--yellow)"></div>Hardware</div>
+          <div class="sys-row-right">Phase 1</div>
+        </div>
+      </div>
+
+      <!-- STATS WIDGET -->
+      <div class="glass-card widget widget-sm">
+        <div class="widget-label">Uptime</div>
+        <div class="widget-ring">
+          <svg class="ring-svg" viewBox="0 0 44 44" width="44" height="44">
+            <circle class="ring-track" cx="22" cy="22" r="18"/>
+            <circle class="ring-fill" cx="22" cy="22" r="18" stroke="var(--blue)"
+              stroke-dasharray="113" stroke-dashoffset="28" id="uptime-ring"/>
+          </svg>
+        </div>
+        <div class="widget-value" id="uptime-val">0s</div>
+        <div class="widget-sub">Session</div>
+      </div>
+    </div>
+
+    <!-- NOTIFICATION STRIP -->
+    <div id="notif-strip" class="fade-up delay-5" style="margin-bottom:16px;display:flex;flex-direction:column;gap:8px;"></div>
+
+  </div><!-- /home -->
+
+  <!-- DOCK -->
+  <div id="dock">
+    <div class="dock-inner">
+      <div class="dock-btn ai-bg" onclick="openPanel('chat')" title="JARVIS AI">🤖</div>
+      <div class="dock-btn" style="background:rgba(255,255,255,0.08)" onclick="openPanel('cc')" title="Control Centre">⊞</div>
+      <div class="dock-divider"></div>
+      <div class="dock-btn" style="background:rgba(255,255,255,0.08)" onclick="startVoice()" title="Voice">🎤</div>
+      <div class="dock-btn" style="background:rgba(255,255,255,0.08)" onclick="openPanel('settings')" title="Settings">⚙️</div>
+    </div>
+  </div>
+
+</div><!-- /os -->
+
+<!-- ══ PANELS ══ -->
+
+<!-- JARVIS CHAT PANEL -->
+<div class="panel-overlay" id="panel-chat" onclick="closePanelBg(event,'chat')">
+  <div class="panel-sheet">
+    <div class="panel-handle"></div>
+    <div class="panel-title-row">
+      <div class="panel-title">JARVIS AI</div>
+      <button class="panel-close" onclick="closePanel('chat')">✕</button>
+    </div>
+    <div class="panel-body" style="display:flex;flex-direction:column;">
+      <div id="chat-messages"></div>
+      <div class="chat-input-row">
+        <input id="chat-input" placeholder="Ask anything…" onkeydown="if(event.key==='Enter')sendMsg()"/>
+        <button id="chat-mic" onclick="startVoice()">🎤</button>
+        <button id="chat-send" onclick="sendMsg()">↑</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- VISION PANEL -->
+<div class="panel-overlay" id="panel-vision" onclick="closePanelBg(event,'vision')">
+  <div class="panel-sheet">
+    <div class="panel-handle"></div>
+    <div class="panel-title-row">
+      <div class="panel-title">Vision System</div>
+      <button class="panel-close" onclick="closePanel('vision')">✕</button>
+    </div>
+    <div class="panel-body">
+      <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:var(--radius-sm);padding:40px 20px;text-align:center;margin-bottom:16px;">
+        <div style="font-size:40px;margin-bottom:12px;">👁</div>
+        <div style="font-size:14px;color:var(--text-dim);">Camera feed will appear here</div>
+        <div style="font-size:11px;color:var(--text-faint);margin-top:4px;">Hardware Phase 2 required</div>
+      </div>
+      <div class="sys-row"><div class="sys-row-left"><div class="sys-dot" style="background:var(--yellow)"></div>Hand Tracking</div><div class="sys-row-right">Phase 2</div></div>
+      <div class="sys-row"><div class="sys-row-left"><div class="sys-dot" style="background:var(--yellow)"></div>Depth Sensing</div><div class="sys-row-right">Phase 3</div></div>
+      <div class="sys-row"><div class="sys-row-left"><div class="sys-dot" style="background:var(--yellow)"></div>Object Detection</div><div class="sys-row-right">Phase 3</div></div>
+      <div class="sys-row" style="border:none;"><div class="sys-row-left"><div class="sys-dot" style="background:var(--green)"></div>Gyroscope</div><div class="sys-row-right">Active</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- SENSORS PANEL -->
+<div class="panel-overlay" id="panel-sensors" onclick="closePanelBg(event,'sensors')">
+  <div class="panel-sheet">
+    <div class="panel-handle"></div>
+    <div class="panel-title-row">
+      <div class="panel-title">Sensors</div>
+      <button class="panel-close" onclick="closePanel('sensors')">✕</button>
+    </div>
+    <div class="panel-body">
+      <div class="sys-row"><div class="sys-row-left"><div class="sys-dot" style="background:var(--green)"></div>Gyroscope</div><div class="sys-row-right" id="sens-gyro">Reading…</div></div>
+      <div class="sys-row"><div class="sys-row-left"><div class="sys-dot" style="background:var(--green)"></div>Accelerometer</div><div class="sys-row-right" id="sens-accel">Reading…</div></div>
+      <div class="sys-row"><div class="sys-row-left"><div class="sys-dot" style="background:var(--green)"></div>Touch</div><div class="sys-row-right">Active</div></div>
+      <div class="sys-row"><div class="sys-row-left"><div class="sys-dot" style="background:var(--green)"></div>Microphone</div><div class="sys-row-right">Ready</div></div>
+      <div class="sys-row"><div class="sys-row-left"><div class="sys-dot" style="background:var(--yellow)"></div>Camera</div><div class="sys-row-right">Phase 2</div></div>
+      <div class="sys-row" style="border:none;"><div class="sys-row-left"><div class="sys-dot" style="background:var(--yellow)"></div>LiDAR</div><div class="sys-row-right">Phase 3</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- MAP PANEL -->
+<div class="panel-overlay" id="panel-map" onclick="closePanelBg(event,'map')">
+  <div class="panel-sheet">
+    <div class="panel-handle"></div>
+    <div class="panel-title-row">
+      <div class="panel-title">Space Map</div>
+      <button class="panel-close" onclick="closePanel('map')">✕</button>
+    </div>
+    <div class="panel-body" style="padding:0;">
+      <canvas id="minimap" style="width:100%;display:block;border-radius:0 0 var(--radius) var(--radius);"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- CONTROL CENTRE -->
+<div class="panel-overlay" id="panel-cc" onclick="closePanelBg(event,'cc')">
+  <div class="panel-sheet">
+    <div class="panel-handle"></div>
+    <div class="panel-title-row">
+      <div class="panel-title">Control Centre</div>
+      <button class="panel-close" onclick="closePanel('cc')">✕</button>
+    </div>
+    <div id="control-centre">
+      <div class="cc-tile active" id="cc-ai" onclick="toggleCC('ai')">
+        <div class="cc-tile-icon">🤖</div>
+        <div class="cc-tile-name">AI Core</div>
+        <div class="cc-tile-state" id="cc-ai-state">Online</div>
+      </div>
+      <div class="cc-tile" id="cc-voice" onclick="toggleCC('voice')">
+        <div class="cc-tile-icon">🎤</div>
+        <div class="cc-tile-name">Voice</div>
+        <div class="cc-tile-state" id="cc-voice-state">Off</div>
+      </div>
+      <div class="cc-tile" id="cc-gyro" onclick="toggleCC('gyro')">
+        <div class="cc-tile-icon">🔄</div>
+        <div class="cc-tile-name">Gyroscope</div>
+        <div class="cc-tile-state" id="cc-gyro-state">Off</div>
+      </div>
+      <div class="cc-tile" id="cc-hud" onclick="toggleCC('hud')">
+        <div class="cc-tile-icon">📊</div>
+        <div class="cc-tile-name">HUD Mode</div>
+        <div class="cc-tile-state" id="cc-hud-state">Off</div>
+      </div>
+      <div class="cc-tile cc-wide" id="cc-fly" onclick="toggleCC('fly')">
+        <div class="cc-tile-icon">🚀</div>
+        <div class="cc-tile-name">VR World</div>
+        <div class="cc-tile-state" id="cc-fly-state">Launch 3D environment</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS PANEL -->
+<div class="panel-overlay" id="panel-settings" onclick="closePanelBg(event,'settings')">
+  <div class="panel-sheet">
+    <div class="panel-handle"></div>
+    <div class="panel-title-row">
+      <div class="panel-title">Settings</div>
+      <button class="panel-close" onclick="closePanel('settings')">✕</button>
+    </div>
+    <div class="panel-body">
+      <div class="setting-row">
+        <div class="setting-left">
+          <div class="setting-icon" style="background:var(--blue-dim)">🔔</div>
+          <div><div class="setting-text">Notifications</div><div class="setting-sub">JARVIS alerts</div></div>
+        </div>
+        <button class="toggle on" id="tog-notif" onclick="toggleSetting('notif')"></button>
+      </div>
+      <div class="setting-row">
+        <div class="setting-left">
+          <div class="setting-icon" style="background:rgba(52,199,89,0.15)">🎤</div>
+          <div><div class="setting-text">Voice Activation</div><div class="setting-sub">Say "Hey JARVIS"</div></div>
+        </div>
+        <button class="toggle" id="tog-voice" onclick="toggleSetting('voice')"></button>
+      </div>
+      <div class="setting-row">
+        <div class="setting-left">
+          <div class="setting-icon" style="background:rgba(255,214,10,0.15)">🔄</div>
+          <div><div class="setting-text">Gyroscope HUD</div><div class="setting-sub">Head tracking</div></div>
+        </div>
+        <button class="toggle" id="tog-gyro" onclick="toggleSetting('gyro')"></button>
+      </div>
+      <div class="setting-row">
+        <div class="setting-left">
+          <div class="setting-icon" style="background:rgba(255,255,255,0.08)">🌙</div>
+          <div><div class="setting-text">Dark Mode</div><div class="setting-sub">Always on</div></div>
+        </div>
+        <div class="setting-value">On</div>
+      </div>
+      <div class="setting-row" style="border:none;">
+        <div class="setting-left">
+          <div class="setting-icon" style="background:rgba(255,69,58,0.15)">ℹ️</div>
+          <div><div class="setting-text">JARVIS OS</div><div class="setting-sub">Version 1.0 · Sundaram Industries</div></div>
+        </div>
+        <div class="setting-value">v1.0</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SYSTEM PANEL -->
+<div class="panel-overlay" id="panel-system" onclick="closePanelBg(event,'system')">
+  <div class="panel-sheet">
+    <div class="panel-handle"></div>
+    <div class="panel-title-row">
+      <div class="panel-title">System</div>
+      <button class="panel-close" onclick="closePanel('system')">✕</button>
+    </div>
+    <div class="panel-body">
+      <div class="sys-row"><div class="sys-row-left"><div class="sys-dot" style="background:var(--green)"></div>OS Shell</div><div class="sys-row-right">Running</div></div>
+      <div class="sys-row"><div class="sys-row-left"><div class="sys-dot" style="background:var(--green)"></div>AI Module</div><div class="sys-row-right">Online</div></div>
+      <div class="sys-row"><div class="sys-row-left"><div class="sys-dot" style="background:var(--green)"></div>Voice Engine</div><div class="sys-row-right">Ready</div></div>
+      <div class="sys-row"><div class="sys-row-left"><div class="sys-dot" style="background:var(--yellow)"></div>Camera Feed</div><div class="sys-row-right">Phase 2</div></div>
+      <div class="sys-row"><div class="sys-row-left"><div class="sys-dot" style="background:var(--yellow)"></div>Hand Tracking</div><div class="sys-row-right">Phase 2</div></div>
+      <div class="sys-row"><div class="sys-row-left"><div class="sys-dot" style="background:var(--yellow)"></div>Depth Map</div><div class="sys-row-right">Phase 3</div></div>
+      <div class="sys-row" style="border:none;"><div class="sys-row-left"><div class="sys-dot" style="background:var(--yellow)"></div>Raspberry Pi</div><div class="sys-row-right">Phase 4</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- CAMERA PANEL -->
+<div class="panel-overlay" id="panel-camera" onclick="closePanelBg(event,'camera')">
+  <div class="panel-sheet">
+    <div class="panel-handle"></div>
+    <div class="panel-title-row">
+      <div class="panel-title">Camera</div>
+      <button class="panel-close" onclick="closePanel('camera')">✕</button>
+    </div>
+    <div class="panel-body">
+      <video id="cam-feed" autoplay playsinline muted style="width:100%;border-radius:var(--radius-sm);background:#000;aspect-ratio:16/9;object-fit:cover;display:none;"></video>
+      <div id="cam-placeholder" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:var(--radius-sm);padding:40px 20px;text-align:center;margin-bottom:16px;">
+        <div style="font-size:40px;margin-bottom:12px;">📷</div>
+        <div style="font-size:14px;color:var(--text-dim);">Tap to start camera</div>
+      </div>
+      <button onclick="startCamera()" style="width:100%;background:var(--blue);border:none;color:#fff;padding:13px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font);">Start Camera Feed</button>
+    </div>
+  </div>
+</div>
+
+<!-- HEALTH PANEL -->
+<div class="panel-overlay" id="panel-health" onclick="closePanelBg(event,'health')">
+  <div class="panel-sheet">
+    <div class="panel-handle"></div>
+    <div class="panel-title-row">
+      <div class="panel-title">Health Monitor</div>
+      <button class="panel-close" onclick="closePanel('health')">✕</button>
+    </div>
+    <div class="panel-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+        <div class="glass-card" style="padding:14px;text-align:center;">
+          <div style="font-size:28px;margin-bottom:4px;">❤️</div>
+          <div style="font-size:22px;font-weight:700;color:var(--red)" id="heart-rate">--</div>
+          <div style="font-size:10px;color:var(--text-dim);letter-spacing:1px;">BPM</div>
+        </div>
+        <div class="glass-card" style="padding:14px;text-align:center;">
+          <div style="font-size:28px;margin-bottom:4px;">🧠</div>
+          <div style="font-size:22px;font-weight:700;color:var(--blue)">Active</div>
+          <div style="font-size:10px;color:var(--text-dim);letter-spacing:1px;">FOCUS</div>
+        </div>
+        <div class="glass-card" style="padding:14px;text-align:center;">
+          <div style="font-size:28px;margin-bottom:4px;">👁</div>
+          <div style="font-size:22px;font-weight:700;color:var(--green)" id="blink-rate">--</div>
+          <div style="font-size:10px;color:var(--text-dim);letter-spacing:1px;">BLINK/MIN</div>
+        </div>
+        <div class="glass-card" style="padding:14px;text-align:center;">
+          <div style="font-size:28px;margin-bottom:4px;">⏱</div>
+          <div style="font-size:22px;font-weight:700;color:var(--yellow)" id="session-health">0m</div>
+          <div style="font-size:10px;color:var(--text-dim);letter-spacing:1px;">SESSION</div>
+        </div>
+      </div>
+      <div class="sys-row" style="border:none;"><div class="sys-row-left"><div class="sys-dot" style="background:var(--yellow)"></div>Heart Rate Sensor</div><div class="sys-row-right">Phase 3</div></div>
+      <div style="margin-top:10px;padding:12px;background:rgba(255,69,58,0.08);border:1px solid rgba(255,69,58,0.15);border-radius:var(--radius-sm);font-size:12px;color:var(--text-dim);line-height:1.6;">
+        💡 Take a break every 20 minutes. Look 20 feet away for 20 seconds. (20-20-20 rule)
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- NOTES PANEL -->
+<div class="panel-overlay" id="panel-notes" onclick="closePanelBg(event,'notes')">
+  <div class="panel-sheet">
+    <div class="panel-handle"></div>
+    <div class="panel-title-row">
+      <div class="panel-title">Notes</div>
+      <button class="panel-close" onclick="closePanel('notes')">✕</button>
+    </div>
+    <div class="panel-body" style="display:flex;flex-direction:column;gap:12px;">
+      <textarea id="notes-input" placeholder="Start typing your note…" style="width:100%;min-height:160px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:var(--radius-sm);color:var(--text);font-family:var(--font);font-size:14px;padding:14px;outline:none;resize:none;line-height:1.6;"></textarea>
+      <div style="display:flex;gap:8px;">
+        <button onclick="saveNote()" style="flex:1;background:var(--blue);border:none;color:#fff;padding:12px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);">Save Note</button>
+        <button onclick="clearNote()" style="flex:1;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);color:var(--text-dim);padding:12px;border-radius:var(--radius-sm);font-size:13px;cursor:pointer;font-family:var(--font);">Clear</button>
+      </div>
+      <div id="saved-notes" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- WEATHER / ENVIRONMENT PANEL -->
+<div class="panel-overlay" id="panel-weather" onclick="closePanelBg(event,'weather')">
+  <div class="panel-sheet">
+    <div class="panel-handle"></div>
+    <div class="panel-title-row">
+      <div class="panel-title">Environment</div>
+      <button class="panel-close" onclick="closePanel('weather')">✕</button>
+    </div>
+    <div class="panel-body">
+      <div class="glass-card" style="padding:20px;text-align:center;margin-bottom:16px;">
+        <div style="font-size:52px;margin-bottom:8px;" id="env-icon">🌤</div>
+        <div style="font-size:42px;font-weight:300;letter-spacing:-1px;" id="env-temp">28°</div>
+        <div style="font-size:13px;color:var(--text-dim);margin-top:4px;" id="env-desc">Simulated Lab Environment</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;">
+        <div class="glass-card" style="padding:12px;text-align:center;">
+          <div style="font-size:18px;margin-bottom:4px;">💧</div>
+          <div style="font-size:16px;font-weight:600;">45%</div>
+          <div style="font-size:9px;color:var(--text-dim);letter-spacing:1px;">HUMIDITY</div>
+        </div>
+        <div class="glass-card" style="padding:12px;text-align:center;">
+          <div style="font-size:18px;margin-bottom:4px;">💨</div>
+          <div style="font-size:16px;font-weight:600;">12km/h</div>
+          <div style="font-size:9px;color:var(--text-dim);letter-spacing:1px;">WIND</div>
+        </div>
+        <div class="glass-card" style="padding:12px;text-align:center;">
+          <div style="font-size:18px;margin-bottom:4px;">👁</div>
+          <div style="font-size:16px;font-weight:600;">10km</div>
+          <div style="font-size:9px;color:var(--text-dim);letter-spacing:1px;">VISIBILITY</div>
+        </div>
+      </div>
+      <div class="sys-row" style="border:none;padding:0;"><div class="sys-row-left" style="font-size:11px;color:var(--text-faint);">Live weather requires internet. Real sensor data available in Phase 3.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- NOTIFICATION CENTRE -->
+<div class="panel-overlay" id="panel-notifs" onclick="closePanelBg(event,'notifs')">
+  <div class="panel-sheet">
+    <div class="panel-handle"></div>
+    <div class="panel-title-row">
+      <div class="panel-title">Notifications</div>
+      <button class="panel-close" onclick="closePanel('notifs')">✕</button>
+    </div>
+    <div class="panel-body">
+      <div id="notif-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- VOICE INDICATOR -->
+<div id="voice-indicator">
+  <div class="voice-waves">
+    <div class="voice-wave"></div><div class="voice-wave"></div>
+    <div class="voice-wave"></div><div class="voice-wave"></div>
+    <div class="voice-wave"></div>
+  </div>
+  <div class="voice-label" id="voice-label">Listening…</div>
+</div>
+
+<!-- TOAST -->
+<div id="toast">
+  <div class="toast-icon" id="toast-icon">⬡</div>
+  <div class="toast-text" id="toast-text"></div>
+</div>
+
+<!-- HUD OVERLAY (when enabled) -->
+<div id="hud-overlay" style="display:none;position:fixed;inset:0;pointer-events:none;z-index:50;">
+  <div style="position:absolute;top:70px;left:16px;font-size:10px;color:rgba(74,158,255,0.7);letter-spacing:1px;line-height:2;">
+    <div id="hud-orient">ORIENT: —</div>
+    <div id="hud-time2">TIME: —</div>
+  </div>
+  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);opacity:0.4;">
+    <div style="width:20px;height:1px;background:#4A9EFF;position:absolute;top:50%;left:0;transform:translateY(-50%)"></div>
+    <div style="width:1px;height:20px;background:#4A9EFF;position:absolute;left:50%;top:0;transform:translateX(-50%)"></div>
+    <div style="width:4px;height:4px;border-radius:50%;background:#4A9EFF;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)"></div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════
+//  JARVIS OS v1.0 — System Core
+// ══════════════════════════════════════════════════
+
+let isThinking = false, recognition = null, isListening = false;
+let chatHistory = [];
+let sessionStart = Date.now();
+let gyroActive = false, hudActive = false;
+
+// ── BOOT ──
+(function bootSequence() {
+  const fill = document.getElementById('boot-fill');
+  let progress = 0;
+  const interval = setInterval(() => {
+    progress += Math.random() * 18 + 5;
+    fill.style.width = Math.min(progress, 100) + '%';
+    if(progress >= 100) {
+      clearInterval(interval);
+      setTimeout(() => {
+        document.getElementById('boot').classList.add('fade');
+        document.getElementById('os').classList.add('visible');
+        setTimeout(() => document.getElementById('boot').style.display='none', 900);
+        showToast('⬡', 'JARVIS OS online');
+        startGreeting();
+        startClock();
+        startUptimeCounter();
+        startSensorReads();
+        startHealthSim();
+        startEnvSim();
+        addNotifDock();
+        animateAppIcons();
+        startNotifScheduler();
+      }, 400);
+    }
+  }, 80);
+})(); // bootSequence
+
+// ── CLOCK ──
+function startClock() {
+  function tick() {
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2,'0');
+    const m = String(now.getMinutes()).padStart(2,'0');
+    document.getElementById('sb-time').textContent = h + ':' + m;
+    document.getElementById('hud-time2').textContent = 'TIME: ' + h + ':' + m + ':' + String(now.getSeconds()).padStart(2,'0');
+  }
+  tick(); setInterval(tick, 1000);
+}
+
+// ── GREETING ──
+function startGreeting() {
+  const hr = new Date().getHours();
+  const greet = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('greeting-sub').textContent = greet;
+}
+
+// ── UPTIME COUNTER ──
+function startUptimeCounter() {
+  setInterval(() => {
+    const s = Math.floor((Date.now() - sessionStart) / 1000);
+    const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
+    const val = h > 0 ? h+'h '+m+'m' : m > 0 ? m+'m '+sec+'s' : sec+'s';
+    document.getElementById('uptime-val').textContent = val;
+    // Update ring (max visual at 10min)
+    const pct = Math.min(s / 600, 1);
+    const circ = 2 * Math.PI * 18;
+    document.getElementById('uptime-ring').style.strokeDashoffset = circ * (1 - pct);
+  }, 1000);
+}
+
+// ── SENSOR READS ──
+function startSensorReads() {
+  if(typeof DeviceOrientationEvent !== 'undefined') {
+    const listen = () => {
+      window.addEventListener('deviceorientation', (e) => {
+        const a = Math.round(e.alpha||0), b = Math.round(e.beta||0), g = Math.round(e.gamma||0);
+        document.getElementById('sens-gyro').textContent = 'α'+a+'° β'+b+'° γ'+g+'°';
+        document.getElementById('hud-orient').textContent = 'ORIENT: α'+a+' β'+b+' γ'+g;
+      });
+    };
+    if(typeof DeviceOrientationEvent.requestPermission === 'function') {
+      // iOS — needs gesture to request
+    } else {
+      listen();
+    }
+  }
+  if(typeof DeviceMotionEvent !== 'undefined') {
+    window.addEventListener('devicemotion', (e) => {
+      const a = e.accelerationIncludingGravity;
+      if(a) document.getElementById('sens-accel').textContent = 'x:'+Math.round(a.x||0)+' y:'+Math.round(a.y||0)+' z:'+Math.round(a.z||0);
+    });
+  }
+}
+
+// ── PANELS ──
+function openPanel(id) {
+  document.querySelectorAll('.panel-overlay').forEach(p => {
+    p.classList.remove('open');
+  });
+  const panel = document.getElementById('panel-'+id);
+  if(panel) {
+    panel.classList.add('open');
+    if(id === 'chat' && chatHistory.length === 0) {
+      addBubble('jarvis', 'Hello Sundaram. JARVIS OS is online. How can I assist you today?');
+    }
+    if(id === 'map') drawMinimap();
+  }
+}
+
+function closePanel(id) {
+  const panel = document.getElementById('panel-'+id);
+  if(panel) panel.classList.remove('open');
+}
+
+function closePanelBg(e, id) {
+  if(e.target === e.currentTarget) closePanel(id);
+}
+
+// ── CONTROL CENTRE ──
+const ccStates = { ai: true, voice: false, gyro: false, hud: false, fly: false };
+function toggleCC(key) {
+  if(key === 'fly') { closePanel('cc'); openPanel('chat'); addBubble('jarvis', 'VR World module is available. It will launch as a standalone mode once I integrate it into the OS. For now, use the JARVIS AI to control systems.'); return; }
+  ccStates[key] = !ccStates[key];
+  const tile = document.getElementById('cc-'+key);
+  const state = document.getElementById('cc-'+key+'-state');
+  if(tile) tile.classList.toggle('active', ccStates[key]);
+  if(state) state.textContent = ccStates[key] ? 'Active' : 'Off';
+  if(key === 'gyro' && ccStates[key]) enableGyro();
+  if(key === 'hud') {
+    hudActive = ccStates[key];
+    document.getElementById('hud-overlay').style.display = hudActive ? 'block' : 'none';
+  }
+  showToast('⬡', key.toUpperCase() + ' ' + (ccStates[key] ? 'enabled' : 'disabled'));
+}
+
+// ── SETTINGS ──
+const toggleStates = { notif: true, voice: false, gyro: false };
+function toggleSetting(key) {
+  toggleStates[key] = !toggleStates[key];
+  const tog = document.getElementById('tog-'+key);
+  if(tog) tog.classList.toggle('on', toggleStates[key]);
+  showToast('⚙️', key + ' ' + (toggleStates[key] ? 'on' : 'off'));
+}
+
+// ── GYRO ──
+function enableGyro() {
+  if(typeof DeviceOrientationEvent === 'undefined') { showToast('⚠️','Gyroscope not available'); return; }
+  if(typeof DeviceOrientationEvent.requestPermission === 'function') {
+    DeviceOrientationEvent.requestPermission().then(r => { if(r==='granted') { gyroActive=true; showToast('🔄','Gyroscope active'); } });
+  } else { gyroActive = true; showToast('🔄','Gyroscope active'); }
+}
+
+// ── CAMERA ──
+function startCamera() {
+  // Camera requires HTTPS or localhost — won't work on local file://
+  if(location.protocol === 'file:') {
+    showToast('⚠️','Camera needs HTTPS hosting');
+    document.getElementById('cam-placeholder').innerHTML = '<div style="font-size:28px;margin-bottom:10px;">⚠️</div><div style="font-size:13px;color:var(--text-dim);line-height:1.6;">Camera requires HTTPS.<br>Host on GitHub Pages or Netlify for full access.</div>';
+    return;
+  }
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showToast('⚠️','Camera not supported on this browser'); return;
+  }
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}, audio:false})
+    .then(stream => {
+      const vid = document.getElementById('cam-feed');
+      vid.srcObject = stream;
+      vid.style.display = 'block';
+      document.getElementById('cam-placeholder').style.display = 'none';
+      showToast('📷','Camera active — Phase 2 ready');
+    })
+    .catch(err => {
+      const msg = err.name === 'NotAllowedError' ? 'Camera permission denied — allow in browser settings' :
+                  err.name === 'NotFoundError'   ? 'No camera found on this device' : 'Camera error: '+err.message;
+      showToast('⚠️', msg);
+    });
+}
+
+// ── MINIMAP ──
+function drawMinimap() {
+  const canvas = document.getElementById('minimap');
+  const W = canvas.parentElement.clientWidth;
+  canvas.width = W; canvas.height = 200;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#050510';
+  ctx.fillRect(0,0,W,200);
+  // Grid
+  ctx.strokeStyle = 'rgba(74,158,255,0.1)'; ctx.lineWidth = 0.5;
+  for(let i=0;i<W;i+=20){ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i,200);ctx.stroke();}
+  for(let j=0;j<200;j+=20){ctx.beginPath();ctx.moveTo(0,j);ctx.lineTo(W,j);ctx.stroke();}
+  // Objects
+  const pts = [{x:0.5,y:0.5,r:8,c:'#ff4400',l:'Star'},{x:0.2,y:0.6,r:5,c:'#3366cc',l:'Planet'},{x:0.75,y:0.3,r:4,c:'#ffcc44',l:'Station'},{x:0.4,y:0.7,r:3,c:'#aaddff',l:'Ship'},{x:0.65,y:0.6,r:3,c:'#44ffaa',l:'Probe'}];
+  pts.forEach(p => {
+    const x=p.x*W, y=p.y*200;
+    const grd=ctx.createRadialGradient(x,y,0,x,y,p.r*2);
+    grd.addColorStop(0,p.c+'80'); grd.addColorStop(1,p.c+'00');
+    ctx.beginPath(); ctx.arc(x,y,p.r*2,0,Math.PI*2); ctx.fillStyle=grd; ctx.fill();
+    ctx.beginPath(); ctx.arc(x,y,p.r,0,Math.PI*2); ctx.fillStyle=p.c; ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.5)'; ctx.font='9px -apple-system'; ctx.fillText(p.l,x+p.r+3,y+3);
+  });
+  // You marker
+  ctx.beginPath(); ctx.arc(W*0.5,100,5,0,Math.PI*2); ctx.fillStyle='#4A9EFF'; ctx.fill();
+  ctx.fillStyle='rgba(74,158,255,0.2)'; ctx.beginPath(); ctx.arc(W*0.5,100,15,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,0.6)'; ctx.font='10px -apple-system'; ctx.fillText('YOU',W*0.5+8,103);
+}
+
+// ── TOAST ──
+function showToast(icon, text) {
+  document.getElementById('toast-icon').textContent = icon;
+  document.getElementById('toast-text').textContent = text;
+  const t = document.getElementById('toast');
+  t.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── JARVIS OFFLINE AI ──
+const FACTS = {
+  'who are you': 'I am JARVIS — Just A Rather Very Intelligent System. Built by Sundaram to be the core intelligence of a real wearable AI device. Currently running on JARVIS OS v1.0.',
+  'what is jarvis os': 'JARVIS OS is the operating system Sundaram is building for his wearable AI headset — similar to Apple visionOS but built from scratch. You are looking at Phase 1 of the software.',
+  'project status': 'Phase 1 is complete — the OS shell, UI system, sensor integration, and voice engine are running. Phase 2 is hand tracking with camera. Phase 3 is depth sensing. Phase 4 is Raspberry Pi hardware.',
+  'hardware': 'The hardware plan: VR shell headset (Phase 1), USB camera for hand tracking (Phase 2), depth sensor (Phase 3), Raspberry Pi 5 as standalone brain (Phase 4). Total estimated cost: under ₹12,000.',
+  'next phase': 'Phase 2 involves connecting a USB camera and running MediaPipe on the phone to detect hand gestures in real time. This allows touch-free control — just like Apple Vision Pro.',
+  'apple vision pro': 'Apple Vision Pro uses micro-OLED displays, 12 cameras, LiDAR, eye tracking, and custom M2+R1 chips. Your version starts with a phone display and camera, then scales up with each hardware phase.',
+  'how does this work': 'Your phone becomes the brain and display of the headset. The screen splits for each eye in VR mode. The camera watches your hands. The gyroscope tracks your head. The AI is me.',
+  'iron man': 'Tony Stark started with arc reactor in a cave. You started with a phone and HTML. The approach is identical — prove the concept with what you have, then scale up the materials.',
+  'sensors': 'Currently active sensors: gyroscope, accelerometer, touch, microphone. Coming in Phase 2: camera. Phase 3: depth sensor. Phase 4: full environmental mapping via Raspberry Pi.',
+  'cost': 'Phase 1 (current): ₹0 — software only. Phase 2: ~₹500 for USB OTG camera. Phase 3: ~₹2,000 for depth sensor. Phase 4: ~₹5,000 for Raspberry Pi 5. Total: under ₹8,000 for a working prototype.',
+  'voice': 'Voice recognition is active on Chrome-based browsers. On Android, tap the microphone button and speak. I will process your command and respond. In future phases, "Hey JARVIS" will trigger me automatically.',
+};
+
+function jarvisThink(input) {
+  const q = input.toLowerCase().trim();
+
+  // Greetings
+  if(['hello','hi','hey','namaste','good morning','good evening','good afternoon'].some(g=>q.includes(g))) {
+    const hr = new Date().getHours();
+    return 'Good '+(hr<12?'morning':hr<17?'afternoon':'evening')+', Sundaram. All systems are nominal. JARVIS OS is running. How may I assist you?';
+  }
+
+  // Farewells
+  if(['bye','goodbye','see you','later','goodnight'].some(g=>q.includes(g)))
+    return 'Goodbye, Sundaram. JARVIS OS will remain active and monitoring. All systems will stay online.';
+
+  // Math
+  const mathM = q.match(/(\d+\.?\d*)\s*([+\-x*\/])\s*(\d+\.?\d*)/);
+  if(mathM) {
+    const a=parseFloat(mathM[1]), op=mathM[2], b=parseFloat(mathM[3]);
+    const ops = {'+':a+b, '-':a-b, '*':a*b, 'x':a*b, '/': b?+(a/b).toFixed(4):'undefined'};
+    return 'Result: '+a+' '+op+' '+b+' = '+ops[op];
+  }
+
+  // Time/date
+  if(q.includes('time')||q.includes('date')||q.includes('today')||q.includes('day')) {
+    const n = new Date();
+    return 'Current time: '+n.toLocaleTimeString('en-IN')+'. Today is '+n.toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'})+'.';
+  }
+
+  // Knowledge base
+  for(const [key, val] of Object.entries(FACTS)) {
+    if(q.includes(key)) return val;
+  }
+
+  // Keyword matches
+  if(q.includes('phase')||q.includes('status')||q.includes('progress')) return FACTS['project status'];
+  if(q.includes('hardware')||q.includes('raspberry')||q.includes('pi')||q.includes('build')) return FACTS['hardware'];
+  if(q.includes('apple')||q.includes('vision pro')) return FACTS['apple vision pro'];
+  if(q.includes('cost')||q.includes('price')||q.includes('money')||q.includes('rupee')) return FACTS['cost'];
+  if(q.includes('sensor')||q.includes('gyro')||q.includes('camera')) return FACTS['sensors'];
+  if(q.includes('iron')||q.includes('tony')||q.includes('stark')||q.includes('suit')) return FACTS['iron man'];
+  if(q.includes('next')||q.includes('plan')||q.includes('roadmap')) return FACTS['next phase'];
+  if(q.includes('voice')||q.includes('speak')||q.includes('mic')) return FACTS['voice'];
+  if(q.includes('how')||q.includes('work')||q.includes('explain')) return FACTS['how does this work'];
+  if(q.includes('what is')||q.includes('what are')||q.includes('jarvis os')) return FACTS['what is jarvis os'];
+  if(q.includes('who')||q.includes('jarvis')) return FACTS['who are you'];
+  if(q.includes('help')||q.includes('what can')) return 'I can help you with: project status, hardware planning, cost breakdown, understanding each phase, sensor data, time and calculations. What do you need?';
+  if(q.includes('weather')) return 'I do not have a weather sensor yet — that is Phase 3. But the lab environment reads 22°C, 45% humidity. Optimal conditions.';
+  if(q.includes('open')||q.includes('launch')||q.includes('start')) return 'To open an app, tap it on the home screen. JARVIS AI, Vision, Sensors, Map, System, and Camera are available. What would you like to open?';
+
+  // Fallback
+  return ['I am processing your request. Could you rephrase it, or would you like me to give you a project status update?',
+    'Understood. For detailed information, ask me about: hardware, cost, phases, sensors, or how JARVIS works.',
+    'Query received. I have full knowledge of our build plan. Ask me about any phase of the project and I will brief you.'
+  ][Math.floor(Math.random()*3)];
+}
+
+// ── CHAT ──
+function addBubble(who, text, thinking=false) {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'bubble bubble-'+(who==='user'?'user':'jarvis')+(thinking?' bubble-thinking':'');
+  div.textContent = text;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+async function sendMsg() {
+  const inp = document.getElementById('chat-input');
+  const text = inp.value.trim();
+  if(!text||isThinking) return;
+  inp.value='';
+  openPanel('chat');
+  addBubble('user', text);
+  chatHistory.push({role:'user', content:text});
+  isThinking = true;
+  const thinkEl = addBubble('jarvis', '…', true);
+  await new Promise(r => setTimeout(r, 350 + Math.random()*350));
+  const reply = jarvisThink(text);
+  thinkEl.remove();
+  addBubble('jarvis', reply);
+  chatHistory.push({role:'assistant', content:reply});
+  speakText(reply);
+  isThinking = false;
+}
+
+// ── VOICE ──
+function startVoice() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR) { showToast('⚠️','Voice needs Chrome browser'); return; }
+  if(isListening) { try{recognition&&recognition.stop();}catch(e){} return; }
+  recognition = new SR();
+  recognition.lang = 'en-IN';
+  recognition.onstart = () => {
+    isListening = true;
+    document.getElementById('voice-indicator').classList.add('show');
+    document.getElementById('voice-label').textContent = 'Listening…';
+  };
+  recognition.onresult = (e) => {
+    const t = e.results[0][0].transcript.trim();
+    document.getElementById('voice-label').textContent = '"' + t + '"';
+    document.getElementById('chat-input').value = t;
+    openPanel('chat');
+    setTimeout(sendMsg, 500);
+  };
+  recognition.onend = () => {
+    isListening = false;
+    setTimeout(() => document.getElementById('voice-indicator').classList.remove('show'), 1200);
+  };
+  recognition.onerror = (e) => {
+    isListening = false;
+    document.getElementById('voice-indicator').classList.remove('show');
+    showToast('⚠️', 'Mic error: ' + e.error);
+  };
+  try { recognition.start(); } catch(e) { showToast('⚠️','Voice failed to start'); }
+}
+
+function speakText(text) {
+  if(!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text.slice(0,180));
+  u.rate=0.95; u.pitch=0.8; u.volume=1; u.lang='en-IN';
+  const go = () => {
+    const v = speechSynthesis.getVoices().find(v=>v.lang.startsWith('en'))||speechSynthesis.getVoices()[0];
+    if(v) u.voice=v;
+    speechSynthesis.speak(u);
+  };
+  speechSynthesis.getVoices().length ? go() : (speechSynthesis.onvoiceschanged=go, setTimeout(go,500));
+}
+
+// ── NOTIFICATIONS SYSTEM ──
+const notifications = [];
+function pushNotif(icon, title, body, color='var(--blue)') {
+  const notif = {id: Date.now(), icon, title, body, color, time: new Date()};
+  notifications.unshift(notif);
+
+  // Toast
+  showToast(icon, title + ' — ' + body);
+
+  // Strip on home
+  renderNotifStrip();
+
+  // Notif list in panel
+  renderNotifList();
+}
+
+function renderNotifStrip() {
+  const strip = document.getElementById('notif-strip');
+  strip.innerHTML = '';
+  notifications.slice(0,2).forEach(n => {
+    const el = document.createElement('div');
+    el.style.cssText = 'background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:10px 14px;display:flex;align-items:center;gap:10px;animation:fadeUp 0.3s ease;';
+    el.innerHTML = `<span style="font-size:18px">${n.icon}</span><div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--text)">${n.title}</div><div style="font-size:11px;color:var(--text-dim);margin-top:1px">${n.body}</div></div><div style="font-size:10px;color:var(--text-faint)">${n.time.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</div>`;
+    el.onclick = () => el.remove();
+    strip.appendChild(el);
+  });
+}
+
+function renderNotifList() {
+  const list = document.getElementById('notif-list');
+  if(!list) return;
+  list.innerHTML = '';
+  if(notifications.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-dim);font-size:14px;">No notifications</div>';
+    return;
+  }
+  notifications.forEach(n => {
+    const el = document.createElement('div');
+    el.style.cssText = 'background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:12px 14px;display:flex;align-items:flex-start;gap:10px;';
+    el.innerHTML = `<div style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${n.icon}</div><div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px">${n.title}</div><div style="font-size:12px;color:var(--text-dim);line-height:1.4">${n.body}</div><div style="font-size:10px;color:var(--text-faint);margin-top:4px">${n.time.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</div></div>`;
+    list.appendChild(el);
+  });
+}
+
+// ── NOTES ──
+let savedNotes = [];
+function saveNote() {
+  const text = document.getElementById('notes-input').value.trim();
+  if(!text) return;
+  savedNotes.unshift({text, time: new Date()});
+  document.getElementById('notes-input').value = '';
+  renderNotes();
+  pushNotif('📝', 'Note Saved', text.slice(0,40)+(text.length>40?'…':''));
+}
+function clearNote() { document.getElementById('notes-input').value = ''; }
+function renderNotes() {
+  const el = document.getElementById('saved-notes');
+  el.innerHTML = savedNotes.slice(0,5).map(n =>
+    `<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:12px 14px;">
+      <div style="font-size:13px;color:var(--text);line-height:1.5;margin-bottom:6px">${n.text}</div>
+      <div style="font-size:10px;color:var(--text-faint)">${n.time.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</div>
+    </div>`
+  ).join('');
+}
+
+// ── HEALTH SIMULATION ──
+function startHealthSim() {
+  let blinkCount = 0;
+  setInterval(() => {
+    // Simulated heart rate 68-82
+    const hr = 68 + Math.floor(Math.random()*14);
+    const hrEl = document.getElementById('heart-rate');
+    if(hrEl) hrEl.textContent = hr;
+
+    // Session time
+    const s = Math.floor((Date.now()-sessionStart)/1000);
+    const m = Math.floor(s/60);
+    const shEl = document.getElementById('session-health');
+    if(shEl) shEl.textContent = m > 59 ? Math.floor(m/60)+'h '+m%60+'m' : m+'m '+s%60+'s';
+
+    // Blink rate simulation
+    blinkCount = 12 + Math.floor(Math.random()*8);
+    const bEl = document.getElementById('blink-rate');
+    if(bEl) bEl.textContent = blinkCount;
+
+    // 20-20-20 rule reminder every 20 min
+    if(s > 0 && s % 1200 === 0) pushNotif('👁','Eye Break','Look 20ft away for 20 seconds','var(--green)');
+  }, 3000);
+}
+
+// ── SCHEDULED NOTIFICATIONS ──
+function startNotifScheduler() {
+  // Boot notification
+  setTimeout(() => pushNotif('⬡','JARVIS OS','All systems online. Welcome back, Sundaram.'), 2000);
+  setTimeout(() => pushNotif('📡','Sensors','Gyroscope and accelerometer active.'), 5000);
+  setTimeout(() => pushNotif('🤖','AI Core','Offline intelligence engine ready.'), 9000);
+}
+
+// ── DOCK NOTIF BUTTON ──
+function addNotifDock() {
+  // Add bell to dock
+  const dockInner = document.querySelector('.dock-inner');
+  if(!dockInner) return;
+  const bell = document.createElement('div');
+  bell.className = 'dock-btn';
+  bell.style.background = 'rgba(255,255,255,0.08)';
+  bell.innerHTML = '🔔';
+  bell.id = 'dock-bell';
+  bell.onclick = () => { renderNotifList(); openPanel('notifs'); };
+  bell.title = 'Notifications';
+  const divider = document.createElement('div');
+  divider.className = 'dock-divider';
+  dockInner.insertBefore(divider, dockInner.children[2]);
+  dockInner.insertBefore(bell, dockInner.children[2]);
+}
+
+// ── APP ICON PULSE ANIMATION ──
+function animateAppIcons() {
+  document.querySelectorAll('.app-tile').forEach((tile, i) => {
+    tile.style.transition = 'transform 0.15s, background 0.2s';
+    tile.addEventListener('touchstart', () => tile.style.transform='scale(0.92)');
+    tile.addEventListener('touchend',   () => tile.style.transform='scale(1)');
+  });
+}
+
+// ── ENVIRONMENT SIMULATION ──
+function startEnvSim() {
+  const envs = [
+    {icon:'☀️', temp:'32°', desc:'Hot day · Clear skies'},
+    {icon:'🌤', temp:'28°', desc:'Partly cloudy · Pleasant'},
+    {icon:'🌙', temp:'22°', desc:'Night · Cool breeze'},
+    {icon:'🌧', temp:'24°', desc:'Rainy · Stay dry'},
+  ];
+  const e = envs[Math.floor(Math.random()*envs.length)];
+  const icon = document.getElementById('env-icon');
+  const temp = document.getElementById('env-temp');
+  const desc = document.getElementById('env-desc');
+  if(icon) icon.textContent = e.icon;
+  if(temp) temp.textContent = e.temp;
+  if(desc) desc.textContent = e.desc + ' (Simulated)';
+}
+
+// ── SWIPE TO CLOSE PANELS ──
+let touchStartY = 0;
+document.querySelectorAll('.panel-sheet').forEach(sheet => {
+  sheet.addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY; }, {passive:true});
+  sheet.addEventListener('touchmove', e => {
+    const dy = e.touches[0].clientY - touchStartY;
+    if(dy > 0) sheet.style.transform = 'translateY(' + dy + 'px)';
+  }, {passive:true});
+  sheet.addEventListener('touchend', e => {
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    sheet.style.transform = '';
+    if(dy > 80) {
+      const panel = sheet.closest('.panel-overlay');
+      if(panel) panel.classList.remove('open');
+    }
+  }, {passive:true});
+});
+</script>
+</body>
+</html>
