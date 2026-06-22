@@ -399,7 +399,100 @@ body {
 #t-ico  { font-size:20px; flex-shrink:0; }
 #t-text { font-size:13px; color:var(--text); font-weight:500; line-height:1.4; }
 
-/* ── ANIMATIONS ── */
+/* ── HAND TRACKING ── */
+#ht-view {
+  position:fixed; inset:0; z-index:250; display:none; background:#000;
+}
+#ht-video {
+  position:absolute; inset:0; width:100%; height:100%;
+  object-fit:cover; transform:scaleX(-1); /* mirror front camera */
+}
+#ht-canvas {
+  position:absolute; inset:0; width:100%; height:100%;
+  transform:scaleX(-1); /* mirror to match video */
+}
+/* HT top bar */
+#ht-top {
+  position:absolute; top:0; left:0; right:0;
+  padding:14px 18px; display:flex; justify-content:space-between; align-items:center;
+  background:linear-gradient(180deg,rgba(0,0,0,.6) 0%,transparent 100%);
+  z-index:10; pointer-events:none;
+}
+.ht-txt { font-size:10px; color:rgba(255,255,255,.75); letter-spacing:1px; }
+#ht-pill {
+  background:rgba(0,0,0,.4); border:1px solid rgba(255,255,255,.18);
+  border-radius:20px; padding:4px 13px; font-size:10px;
+  letter-spacing:2px; color:rgba(255,255,255,.85); backdrop-filter:blur(12px);
+}
+/* HT gesture display */
+#ht-gesture {
+  position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+  z-index:10; pointer-events:none; text-align:center;
+  opacity:0; transition:opacity .2s;
+}
+#ht-gesture.show { opacity:1; }
+.htg-icon  { font-size:52px; }
+.htg-label {
+  font-size:11px; letter-spacing:3px; color:rgba(255,255,255,.85);
+  margin-top:8px; background:rgba(0,0,0,.5); padding:4px 12px;
+  border-radius:20px; backdrop-filter:blur(10px); display:inline-block;
+}
+/* HT info panel */
+#ht-info {
+  position:absolute; top:70px; left:50%; transform:translateX(-50%);
+  width:min(84vw,300px); background:rgba(0,0,0,.55);
+  border:1px solid rgba(255,255,255,.15); border-radius:18px;
+  padding:12px 15px; backdrop-filter:blur(28px); z-index:10;
+  display:none; animation:fadeUp .25s ease;
+}
+.hti-label { font-size:9px; letter-spacing:2px; color:rgba(74,158,255,.8); margin-bottom:6px; }
+.hti-val   { font-size:15px; font-weight:600; color:#fff; margin-bottom:3px; }
+.hti-sub   { font-size:11px; color:rgba(255,255,255,.55); line-height:1.5; }
+/* HT stats bar */
+#ht-stats {
+  position:absolute; bottom:85px; left:50%; transform:translateX(-50%);
+  display:flex; gap:12px; z-index:10; pointer-events:none;
+}
+.ht-stat {
+  background:rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.12);
+  border-radius:12px; padding:7px 12px; backdrop-filter:blur(12px);
+  text-align:center;
+}
+.ht-stat-val { font-size:14px; font-weight:700; color:var(--blue); }
+.ht-stat-lbl { font-size:8px; color:rgba(255,255,255,.5); letter-spacing:1px; margin-top:2px; }
+/* HT dock */
+#ht-dock {
+  position:absolute; bottom:0; left:0; right:0;
+  display:flex; justify-content:center; gap:10px;
+  padding:0 0 22px;
+  background:linear-gradient(0deg,rgba(0,0,0,.65) 0%,transparent 100%);
+  z-index:10;
+}
+/* Finger tip dots */
+.ht-dot {
+  position:absolute; border-radius:50%;
+  pointer-events:none; transform:translate(-50%,-50%);
+  transition:opacity .1s;
+}
+/* Pinch indicator */
+#pinch-ring {
+  position:absolute; border-radius:50%;
+  border:2px solid rgba(74,158,255,.8);
+  pointer-events:none; z-index:15;
+  transform:translate(-50%,-50%);
+  display:none;
+  animation:pinchPulse .4s ease-in-out infinite;
+}
+@keyframes pinchPulse{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.15)}}
+/* Action ripple */
+.ht-ripple {
+  position:fixed; border-radius:50%;
+  border:2px solid rgba(74,158,255,.7);
+  pointer-events:none; z-index:400;
+  animation:htRip .5s ease-out forwards;
+}
+@keyframes htRip{from{width:0;height:0;opacity:.9;transform:translate(-50%,-50%)}to{width:70px;height:70px;opacity:0;transform:translate(-50%,-50%)}}
+
 @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
 .fu  { animation:fadeUp .45s ease both; }
 .d1  { animation-delay:.05s; }
@@ -417,8 +510,52 @@ body {
 <div id="boot">
   <div class="b-logo">⬡</div>
   <div class="b-name">JARVIS</div>
-  <div class="b-sub">OPERATING SYSTEM · v4.0</div>
+  <div class="b-sub">OPERATING SYSTEM · v5.0 · HAND TRACKING</div>
   <div class="b-track"><div class="b-fill" id="b-fill"></div></div>
+</div>
+
+<!-- ══ HAND TRACKING VIEW ══ -->
+<div id="ht-view">
+  <video id="ht-video" autoplay playsinline muted></video>
+  <canvas id="ht-canvas"></canvas>
+
+  <!-- Top bar -->
+  <div id="ht-top">
+    <div class="ht-txt" id="ht-time">00:00</div>
+    <div id="ht-pill">HAND TRACKING</div>
+    <div class="ht-txt" id="ht-fps">-- FPS</div>
+  </div>
+
+  <!-- Gesture display -->
+  <div id="ht-gesture">
+    <div class="htg-icon" id="htg-icon">✋</div>
+    <div class="htg-label" id="htg-label">SHOW YOUR HAND</div>
+  </div>
+
+  <!-- Info panel -->
+  <div id="ht-info">
+    <div class="hti-label" id="hti-label">GESTURE DETECTED</div>
+    <div class="hti-val"   id="hti-val">—</div>
+    <div class="hti-sub"   id="hti-sub">—</div>
+  </div>
+
+  <!-- Stats -->
+  <div id="ht-stats">
+    <div class="ht-stat"><div class="ht-stat-val" id="ht-hands">0</div><div class="ht-stat-lbl">HANDS</div></div>
+    <div class="ht-stat"><div class="ht-stat-val" id="ht-pts">0</div><div class="ht-stat-lbl">POINTS</div></div>
+    <div class="ht-stat"><div class="ht-stat-val" id="ht-gest">—</div><div class="ht-stat-lbl">GESTURE</div></div>
+  </div>
+
+  <!-- Pinch ring -->
+  <div id="pinch-ring"></div>
+
+  <!-- Dock -->
+  <div id="ht-dock">
+    <div class="ar-btn" id="ht-mirror-btn" onclick="htToggleMirror()" title="Mirror">🪞</div>
+    <div class="ar-btn" id="ht-dots-btn"   onclick="htToggleDots()"   title="Show dots">👁</div>
+    <div class="ar-btn"                     onclick="htVoice()"        title="Voice">🎤</div>
+    <div class="ar-btn ar-exit"             onclick="exitHT()"         title="Exit">✕</div>
+  </div>
 </div>
 
 <!-- ══ AR VIEW ══ -->
@@ -503,6 +640,11 @@ body {
         <div class="app-name">AR Vision</div>
         <div class="app-badge" style="background:var(--green);font-size:8px;">LIVE</div>
       </div>
+      <div class="gc app-tile fu d2" onclick="launchHT()">
+        <div class="app-ico" style="background:linear-gradient(145deg,#1a0d3a,#0d0618)">✋</div>
+        <div class="app-name">Hand Track</div>
+        <div class="app-badge" style="background:var(--blue);font-size:8px;">NEW</div>
+      </div>
       <div class="gc app-tile fu d3" onclick="openPanel('sensors')">
         <div class="app-ico" style="background:linear-gradient(145deg,#0d3a2d,#082018)">📡</div>
         <div class="app-name">Sensors</div>
@@ -542,8 +684,8 @@ body {
         <div class="sys-r" id="sys-gyro-state">Active</div>
       </div>
       <div class="sys-row">
-        <div class="sys-l"><div class="sys-dot" style="background:var(--yellow)"></div>Hand Tracking</div>
-        <div class="sys-r">Phase 5</div>
+        <div class="sys-l"><div class="sys-dot" style="background:var(--green)"></div>Hand Tracking</div>
+        <div class="sys-r" style="color:var(--green)">Phase 5 ✓</div>
       </div>
       <div class="sys-row" style="border:none">
         <div class="sys-l"><div class="sys-dot" style="background:var(--yellow)"></div>Raspberry Pi</div>
@@ -649,8 +791,8 @@ body {
       <div class="phase-row"><div class="phase-num phase-done">✓</div><div><div class="phase-title">Phase 2 — UI Polish</div><div class="phase-desc">Notes, sensors, settings, control centre, session uptime.</div></div></div>
       <div class="phase-row"><div class="phase-num phase-done">✓</div><div><div class="phase-title">Phase 3 — AR Camera</div><div class="phase-desc">Live camera passthrough, VR split mode, object scan overlay, HUD.</div></div></div>
       <div class="phase-row"><div class="phase-num phase-done">✓</div><div><div class="phase-title">Phase 4 — OS Polish</div><div class="phase-desc">Removed fake features. Only real working systems remain.</div></div></div>
-      <div class="phase-row"><div class="phase-num phase-now">5</div><div><div class="phase-title">Phase 5 — Hand Tracking</div><div class="phase-desc">MediaPipe AI detects hand landmarks via camera. Pinch to click, swipe to scroll.</div></div></div>
-      <div class="phase-row"><div class="phase-num phase-next">6</div><div><div class="phase-title">Phase 6 — Raspberry Pi</div><div class="phase-desc">OS runs standalone on Pi hardware. Physical headset prototype.</div></div></div>
+      <div class="phase-row"><div class="phase-num phase-done">✓</div><div><div class="phase-title">Phase 5 — Hand Tracking</div><div class="phase-desc">MediaPipe AI detects 21 hand landmarks via front camera. Pinch to click, gestures to control OS.</div></div></div>
+      <div class="phase-row"><div class="phase-num phase-now">6</div><div><div class="phase-title">Phase 6 — Raspberry Pi</div><div class="phase-desc">OS runs standalone on Pi hardware. Physical headset prototype.</div></div></div>
       <div class="phase-row"><div class="phase-num phase-next">7</div><div><div class="phase-title">Phase 7 — Eye Tracking</div><div class="phase-desc">Front camera tracks eye gaze. Look at object to select it.</div></div></div>
       <div class="phase-row" style="border:none"><div class="phase-num phase-next">8</div><div><div class="phase-title">Phase 8 — Full Device</div><div class="phase-desc">Custom display, lenses, miniaturised hardware. Real wearable product.</div></div></div>
     </div>
@@ -676,8 +818,8 @@ body {
         <button class="tog" id="tog-gyro" onclick="toggle('gyro')"></button>
       </div>
       <div class="set-row" style="border:none">
-        <div class="set-l"><div class="set-ico" style="background:rgba(255,255,255,.07)">ℹ️</div><div><div class="set-label">JARVIS OS v4.0</div><div class="set-sub">Sundaram Industries · Phase 4 Complete</div></div></div>
-        <div class="set-val">v4.0</div>
+        <div class="set-l"><div class="set-ico" style="background:rgba(255,255,255,.07)">ℹ️</div><div><div class="set-label">JARVIS OS v5.0</div><div class="set-sub">Sundaram Industries · Phase 5 Complete</div></div></div>
+        <div class="set-val">v5.0</div>
       </div>
     </div>
   </div>
@@ -705,7 +847,7 @@ body {
 
 <script>
 // ══════════════════════════════════════════════════
-//  JARVIS OS v4.0 — Core System
+//  JARVIS OS v5.0 — Core System
 // ══════════════════════════════════════════════════
 
 // ── STATE ──
@@ -745,7 +887,7 @@ function initOS() {
   startUptime();
   startSensors();
   // Boot notifications
-  setTimeout(() => pushNotif('⬡', 'JARVIS OS v4.0', 'All systems online.'), 1500);
+  setTimeout(() => pushNotif('⬡', 'JARVIS OS v5.0', 'All systems online.'), 1500);
   setTimeout(() => pushNotif('🥽', 'AR Vision', 'Camera passthrough ready. Tap AR Vision to launch.'), 4000);
 }
 
@@ -806,7 +948,7 @@ function openPanel(id) {
   if (!el) return;
   el.classList.add('open');
   if (id === 'chat' && state.chatHistory.length === 0)
-    addBubble('j', 'Hello Sundaram. JARVIS OS v4.0 is online — Phase 4 complete. How can I assist you?');
+    addBubble('j', 'Hello Sundaram. JARVIS OS v5.0 is online — Phase 5 complete — hand tracking active. How can I assist you?');
 }
 function closePanel(id) { const el = document.getElementById('p-' + id); if (el) el.classList.remove('open'); }
 function bgClose(e, id) { if (e.target === e.currentTarget) closePanel(id); }
@@ -1031,7 +1173,7 @@ function arVoice() { exitAR(); setTimeout(startVoice, 400); }
 // ── JARVIS AI (offline) ──
 const KB = {
   'who are you':    'I am JARVIS — Just A Rather Very Intelligent System. The OS running on your wearable AI headset. Currently at Phase 4. Phase 5 is hand tracking.',
-  'os version':     'JARVIS OS v4.0. Phase 4 is complete — boot, home screen, AR camera, sensors, notes, voice, and OS polish are all done.',
+  'os version':     'JARVIS OS v5.0. Phase 4 is complete — boot, home screen, AR camera, sensors, notes, voice, and OS polish are all done.',
   'project status': 'Phase 1-4 complete. Phase 5 is hand tracking with MediaPipe. Phase 6 is Raspberry Pi standalone. Phase 7 is eye tracking. Phase 8 is the full physical device.',
   'what is phase 5':'Phase 5 is MediaPipe hand tracking. Your front camera watches your hands and detects 21 landmark points per hand. Pinch = click. Swipe = scroll. No touching the screen needed.',
   'hardware':       'Phase 6 hardware: Raspberry Pi 5 (₹5,000), VR shell headset (₹1,200), USB camera (₹500), battery pack (₹800). Total: under ₹8,000 for a working standalone prototype.',
@@ -1052,7 +1194,7 @@ function jarvisThink(input) {
 
   // Greetings
   if (['hello','hi','hey','namaste'].some(g => q.startsWith(g)))
-    return 'Good ' + (new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening') + ', Sundaram. JARVIS OS v4.0 online. How can I assist?';
+    return 'Good ' + (new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening') + ', Sundaram. JARVIS OS v5.0 online. How can I assist?';
 
   // Farewells
   if (['bye','goodbye','later','goodnight'].some(g => q.includes(g)))
@@ -1155,7 +1297,439 @@ function speakText(text) {
   speechSynthesis.getVoices().length ? go() : (speechSynthesis.onvoiceschanged = go, setTimeout(go, 500));
 }
 
-// ── TOAST ──
+// ══════════════════════════════════════════════════
+//  HAND TRACKING ENGINE — Phase 5
+//  Uses MediaPipe Hands via CDN
+// ══════════════════════════════════════════════════
+
+const ht = {
+  stream: null, animId: null, hands: null,
+  results: null, fpsCount: 0, lastFps: Date.now(),
+  mirror: true, showDots: true, active: false,
+  lastGesture: '', gestureTimer: null,
+  pinchActive: false, pinchX: 0, pinchY: 0,
+  lastPinchTime: 0
+};
+
+// MediaPipe landmark indices
+const HAND_CONNECTIONS = [
+  [0,1],[1,2],[2,3],[3,4],       // thumb
+  [0,5],[5,6],[6,7],[7,8],       // index
+  [0,9],[9,10],[10,11],[11,12],  // middle
+  [0,13],[13,14],[14,15],[15,16],// ring
+  [0,17],[17,18],[18,19],[19,20],// pinky
+  [5,9],[9,13],[13,17]           // palm
+];
+
+// Fingertip indices
+const TIPS = { thumb:4, index:8, middle:12, ring:16, pinky:20 };
+// MCP (knuckle) indices
+const MCPS = { index:5, middle:9, ring:13, pinky:17 };
+
+async function launchHT() {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    toast('⚠️','Camera needs HTTPS — open via GitHub Pages'); return;
+  }
+  toast('✋','Loading Hand Tracking…');
+
+  // Load MediaPipe from CDN
+  if (!window.Hands) {
+    await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js');
+    await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js');
+  }
+
+  try {
+    // Front camera for hand tracking
+    ht.stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode:'user', width:{ideal:640}, height:{ideal:480} },
+      audio: false
+    });
+
+    const vid = document.getElementById('ht-video');
+    vid.srcObject = ht.stream;
+    await vid.play();
+
+    document.getElementById('os').style.display = 'none';
+    document.getElementById('ht-view').style.display = 'block';
+    ht.active = true;
+
+    resizeHTCanvas();
+    initMediaPipe();
+    startHTLoop();
+
+    pushNotif('✋','Hand Tracking','Phase 5 active. Show your hand to the camera.');
+    setTimeout(() => showHTGesture('✋','SHOW YOUR HAND TO CAMERA'), 800);
+
+  } catch(err) {
+    const msgs = { NotAllowedError:'Camera permission denied', NotFoundError:'No front camera found' };
+    toast('⚠️', msgs[err.name] || 'Camera error: ' + err.message);
+  }
+}
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = src; s.crossOrigin = 'anonymous';
+    s.onload = resolve; s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+function initMediaPipe() {
+  if (!window.Hands) { startFallbackTracking(); return; }
+
+  ht.hands = new Hands({
+    locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`
+  });
+
+  ht.hands.setOptions({
+    maxNumHands: 2,
+    modelComplexity: 1,
+    minDetectionConfidence: 0.7,
+    minTrackingConfidence: 0.6
+  });
+
+  ht.hands.onResults(onHTResults);
+
+  // Use Camera utility to feed frames
+  if (window.Camera) {
+    const cam = new Camera(document.getElementById('ht-video'), {
+      onFrame: async () => {
+        await ht.hands.send({ image: document.getElementById('ht-video') });
+      },
+      width: 640, height: 480
+    });
+    cam.start();
+  } else {
+    // Manual frame loop fallback
+    const sendFrames = async () => {
+      if (!ht.active) return;
+      await ht.hands.send({ image: document.getElementById('ht-video') });
+      requestAnimationFrame(sendFrames);
+    };
+    sendFrames();
+  }
+}
+
+// Called every frame by MediaPipe with results
+function onHTResults(results) {
+  ht.results = results;
+  const canvas = document.getElementById('ht-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  ctx.clearRect(0, 0, W, H);
+
+  const detected = results.multiHandLandmarks?.length || 0;
+  document.getElementById('ht-hands').textContent = detected;
+  document.getElementById('ht-pts').textContent   = detected * 21;
+
+  if (detected === 0) {
+    document.getElementById('ht-info').style.display = 'none';
+    document.getElementById('ht-gest').textContent = '—';
+    document.getElementById('pinch-ring').style.display = 'none';
+    return;
+  }
+
+  results.multiHandLandmarks.forEach((landmarks, handIdx) => {
+    const handedness = results.multiHandedness?.[handIdx]?.label || 'Right';
+
+    // Draw connections
+    HAND_CONNECTIONS.forEach(([a, b]) => {
+      const p1 = landmarks[a], p2 = landmarks[b];
+      ctx.beginPath();
+      ctx.moveTo(p1.x * W, p1.y * H);
+      ctx.lineTo(p2.x * W, p2.y * H);
+      ctx.strokeStyle = 'rgba(74,158,255,0.6)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    });
+
+    // Draw landmark dots
+    if (ht.showDots) {
+      landmarks.forEach((lm, i) => {
+        const isTip = Object.values(TIPS).includes(i);
+        ctx.beginPath();
+        ctx.arc(lm.x * W, lm.y * H, isTip ? 7 : 4, 0, Math.PI * 2);
+        ctx.fillStyle = isTip ? 'rgba(74,158,255,0.95)' : 'rgba(255,255,255,0.7)';
+        ctx.fill();
+        // Tip glow
+        if (isTip) {
+          const g = ctx.createRadialGradient(lm.x*W, lm.y*H, 0, lm.x*W, lm.y*H, 14);
+          g.addColorStop(0, 'rgba(74,158,255,0.3)');
+          g.addColorStop(1, 'rgba(74,158,255,0)');
+          ctx.beginPath(); ctx.arc(lm.x*W, lm.y*H, 14, 0, Math.PI*2);
+          ctx.fillStyle = g; ctx.fill();
+        }
+      });
+    }
+
+    // Draw hand label
+    const wrist = landmarks[0];
+    ctx.font = 'bold 12px -apple-system';
+    ctx.fillStyle = 'rgba(74,158,255,0.8)';
+    ctx.fillText(handedness + ' Hand', wrist.x * W - 30, wrist.y * H - 12);
+
+    // Detect gesture
+    const gesture = detectGesture(landmarks);
+    if (gesture && gesture !== ht.lastGesture) {
+      ht.lastGesture = gesture;
+      handleGesture(gesture, landmarks, handIdx);
+    }
+  });
+
+  // Pinch detection — index tip to thumb tip
+  if (detected > 0) {
+    const lm = results.multiHandLandmarks[0];
+    const thumb = lm[TIPS.thumb];
+    const index = lm[TIPS.index];
+    const dist  = Math.hypot(thumb.x - index.x, thumb.y - index.y);
+    const pinching = dist < 0.05;
+
+    if (pinching && !ht.pinchActive) {
+      ht.pinchActive = true;
+      const cx = ((thumb.x + index.x) / 2) * window.innerWidth;
+      const cy = ((thumb.y + index.y) / 2) * window.innerHeight;
+      ht.pinchX = cx; ht.pinchY = cy;
+      handlePinch(cx, cy);
+    } else if (!pinching) {
+      ht.pinchActive = false;
+      document.getElementById('pinch-ring').style.display = 'none';
+    }
+
+    if (pinching) {
+      const cx = ((thumb.x + index.x) / 2) * window.innerWidth;
+      const cy = ((thumb.y + index.y) / 2) * window.innerHeight;
+      const pr = document.getElementById('pinch-ring');
+      pr.style.display = 'block';
+      pr.style.width   = '40px';
+      pr.style.height  = '40px';
+      pr.style.left    = cx + 'px';
+      pr.style.top     = cy + 'px';
+    }
+  }
+}
+
+// ── GESTURE DETECTION ──
+function detectGesture(lm) {
+  // Get tip & pip (second joint) y positions
+  // Finger "up" = tip y < pip y (higher on screen = smaller y)
+  const fingerUp = (tip, pip) => lm[tip].y < lm[pip].y - 0.04;
+
+  const indexUp  = fingerUp(8,  6);
+  const middleUp = fingerUp(12, 10);
+  const ringUp   = fingerUp(16, 14);
+  const pinkyUp  = fingerUp(20, 18);
+
+  // Thumb: compare x position
+  const thumbUp = lm[4].x < lm[3].x - 0.04;
+
+  const upCount = [indexUp, middleUp, ringUp, pinkyUp].filter(Boolean).length;
+
+  if ( indexUp && middleUp && !ringUp && !pinkyUp)  return 'PEACE ✌️';
+  if (!indexUp && !middleUp && !ringUp && !pinkyUp) return 'FIST ✊';
+  if ( indexUp && !middleUp && !ringUp && !pinkyUp) return 'POINT 👆';
+  if ( indexUp &&  middleUp &&  ringUp &&  pinkyUp) return 'OPEN ✋';
+  if (!indexUp && !middleUp && !ringUp &&  pinkyUp) return 'PINKY 🤙';
+  if ( thumbUp && !indexUp  && !middleUp && !ringUp && !pinkyUp) return 'THUMBS UP 👍';
+  if (upCount === 3) return 'THREE 🤟';
+  return null;
+}
+
+// ── GESTURE ACTIONS ──
+function handleGesture(gesture, landmarks, handIdx) {
+  document.getElementById('ht-gest').textContent = gesture.split(' ')[0];
+  showHTInfo('GESTURE · HAND ' + (handIdx + 1), gesture, getGestureAction(gesture));
+
+  clearTimeout(ht.gestureTimer);
+  ht.gestureTimer = setTimeout(() => { ht.lastGesture = ''; }, 1200);
+
+  // Visual feedback
+  showHTGesture(gesture.split(' ')[1] || '✋', gesture.split(' ')[0]);
+
+  // Actions
+  switch(gesture) {
+    case 'OPEN ✋':  toast('✋', 'Open hand — scroll mode'); break;
+    case 'FIST ✊':  toast('✊', 'Fist — select / confirm'); break;
+    case 'PEACE ✌️': toast('✌️', 'Peace — navigate back'); break;
+    case 'POINT 👆': toast('👆', 'Point — cursor mode'); break;
+    case 'THUMBS UP 👍': toast('👍', 'Thumbs up — JARVIS acknowledged!'); break;
+  }
+}
+
+function getGestureAction(g) {
+  const actions = {
+    'OPEN ✋':      'Scroll mode. Move hand up/down to scroll through content.',
+    'FIST ✊':      'Select / confirm action. Close fist over an element to activate.',
+    'PEACE ✌️':     'Navigate back. Swipe left to return to previous screen.',
+    'POINT 👆':     'Cursor mode. Index finger controls the on-screen cursor.',
+    'THUMBS UP 👍': 'Confirm gesture. JARVIS acknowledges your command.',
+    'PINKY 🤙':     'Call mode — voice input activating.',
+    'THREE 🤟':     'Three fingers — open app switcher.',
+  };
+  return actions[g] || 'Gesture recognised and logged.';
+}
+
+// ── PINCH = CLICK ──
+function handlePinch(x, y) {
+  const now = Date.now();
+  if (now - ht.lastPinchTime < 600) return; // debounce
+  ht.lastPinchTime = now;
+
+  // Ripple
+  const r = document.createElement('div');
+  r.className = 'ht-ripple';
+  r.style.left = x + 'px'; r.style.top = y + 'px';
+  document.body.appendChild(r);
+  setTimeout(() => r.remove(), 600);
+
+  toast('🤏', 'Pinch detected — click at ' + Math.round(x) + ', ' + Math.round(y));
+  showHTInfo('PINCH GESTURE', 'Index + Thumb', 'Click action triggered at position (' + Math.round(x) + ', ' + Math.round(y) + '). In Phase 6 this will click UI elements.');
+}
+
+// ── FALLBACK — when MediaPipe doesn't load ──
+// Shows real video with simulated landmark overlay
+function startFallbackTracking() {
+  toast('ℹ️', 'Running in demo mode — show your hand');
+  const canvas = document.getElementById('ht-canvas');
+  const ctx = canvas.getContext('2d');
+
+  const demoPoints = generateDemoHand(0.5, 0.5);
+  let angle = 0;
+
+  const loop = () => {
+    if (!ht.active) return;
+    ht.animId = requestAnimationFrame(loop);
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+    angle += 0.01;
+
+    // Animate demo hand slightly
+    const pts = demoPoints.map((p, i) => ({
+      x: p.x + Math.sin(angle + i * 0.3) * 0.008,
+      y: p.y + Math.cos(angle + i * 0.4) * 0.006
+    }));
+
+    // Draw connections
+    HAND_CONNECTIONS.forEach(([a, b]) => {
+      ctx.beginPath();
+      ctx.moveTo(pts[a].x * W, pts[a].y * H);
+      ctx.lineTo(pts[b].x * W, pts[b].y * H);
+      ctx.strokeStyle = 'rgba(74,158,255,0.5)'; ctx.lineWidth = 1.5; ctx.stroke();
+    });
+
+    // Draw dots
+    pts.forEach((p, i) => {
+      const isTip = Object.values(TIPS).includes(i);
+      ctx.beginPath(); ctx.arc(p.x * W, p.y * H, isTip ? 6 : 3.5, 0, Math.PI * 2);
+      ctx.fillStyle = isTip ? 'rgba(74,158,255,0.9)' : 'rgba(255,255,255,0.65)'; ctx.fill();
+    });
+
+    ctx.font = 'bold 11px -apple-system';
+    ctx.fillStyle = 'rgba(74,158,255,0.75)';
+    ctx.fillText('DEMO MODE — MediaPipe loading…', 14, H - 14);
+
+    document.getElementById('ht-hands').textContent = '1';
+    document.getElementById('ht-pts').textContent = '21';
+    document.getElementById('ht-gest').textContent = 'OPEN';
+  };
+  loop();
+}
+
+function generateDemoHand(cx, cy) {
+  // Approximate 21 landmark positions for an open hand
+  const base = [
+    [0,.1],[-.03,.06],[-.05,.01],[-.07,-.04],[-.09,-.07], // thumb
+    [.01,-.05],[.01,-.11],[.01,-.16],[.01,-.20],           // index
+    [.05,-.06],[.06,-.12],[.06,-.18],[.06,-.22],           // middle
+    [.09,-.05],[.10,-.11],[.10,-.16],[.10,-.20],           // ring
+    [.13,-.03],[.14,-.08],[.14,-.12],[.14,-.16]            // pinky
+  ];
+  return base.map(([dx, dy]) => ({ x: cx + dx, y: cy + dy }));
+}
+
+// ── HT CONTROLS ──
+function htToggleMirror() {
+  ht.mirror = !ht.mirror;
+  const vid = document.getElementById('ht-video');
+  const cnv = document.getElementById('ht-canvas');
+  const flip = ht.mirror ? 'scaleX(-1)' : 'scaleX(1)';
+  vid.style.transform = flip; cnv.style.transform = flip;
+  document.getElementById('ht-mirror-btn').classList.toggle('on', ht.mirror);
+  toast('🪞', 'Mirror ' + (ht.mirror ? 'on' : 'off'));
+}
+
+function htToggleDots() {
+  ht.showDots = !ht.showDots;
+  document.getElementById('ht-dots-btn').classList.toggle('on', ht.showDots);
+  toast('👁', 'Landmark dots ' + (ht.showDots ? 'on' : 'off'));
+}
+
+function htVoice() { exitHT(); setTimeout(startVoice, 400); }
+
+function exitHT() {
+  ht.active = false;
+  ht.stream?.getTracks().forEach(t => t.stop());
+  ht.stream = null;
+  if (ht.animId) { cancelAnimationFrame(ht.animId); ht.animId = null; }
+  if (ht.hands) { ht.hands.close?.(); ht.hands = null; }
+
+  // Reset state
+  ht.lastGesture = '';
+  ht.pinchActive = false;
+  document.getElementById('ht-view').style.display = 'none';
+  document.getElementById('os').style.display = 'flex';
+  document.getElementById('pinch-ring').style.display = 'none';
+  toast('⬡','Hand Tracking closed');
+}
+
+function resizeHTCanvas() {
+  const canvas = document.getElementById('ht-canvas');
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeHTCanvas);
+
+// ── HT START LOOP (FPS) ──
+function startHTLoop() {
+  let fc = 0, lt = Date.now();
+  const loop = () => {
+    if (!ht.active) return;
+    ht.animId = requestAnimationFrame(loop);
+    fc++; const now = Date.now();
+    if (now - lt > 600) {
+      document.getElementById('ht-fps').textContent = Math.round(fc * 1000 / (now - lt)) + ' FPS';
+      fc = 0; lt = now;
+      // Update clock
+      const t = new Date();
+      document.getElementById('ht-time').textContent =
+        String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
+    }
+  };
+  loop();
+}
+
+// ── HT UI HELPERS ──
+function showHTGesture(icon, label, dur = 1200) {
+  document.getElementById('htg-icon').textContent  = icon;
+  document.getElementById('htg-label').textContent = label;
+  const el = document.getElementById('ht-gesture');
+  el.classList.add('show');
+  clearTimeout(showHTGesture._t);
+  showHTGesture._t = setTimeout(() => el.classList.remove('show'), dur);
+}
+
+function showHTInfo(label, val, sub) {
+  document.getElementById('hti-label').textContent = label;
+  document.getElementById('hti-val').textContent   = val;
+  document.getElementById('hti-sub').textContent   = sub;
+  document.getElementById('ht-info').style.display = 'block';
+  clearTimeout(showHTInfo._t);
+  showHTInfo._t = setTimeout(() => { document.getElementById('ht-info').style.display = 'none'; }, 3000);
+}
+
+// ── UPDATE ROADMAP ──
 function toast(ico, text) {
   document.getElementById('t-ico').textContent = ico;
   document.getElementById('t-text').textContent = text;
