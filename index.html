@@ -493,7 +493,198 @@ body {
 }
 @keyframes htRip{from{width:0;height:0;opacity:.9;transform:translate(-50%,-50%)}to{width:70px;height:70px;opacity:0;transform:translate(-50%,-50%)}}
 
-/* ── SPATIAL UI ── */
+/* ── EYE TRACKING ── */
+#eye-cursor {
+  position:fixed; width:28px; height:28px; border-radius:50%;
+  border:2px solid rgba(74,158,255,0.8);
+  pointer-events:none; z-index:9999;
+  transform:translate(-50%,-50%);
+  transition:left .08s ease, top .08s ease;
+  display:none;
+}
+#eye-cursor::after {
+  content:''; position:absolute; top:50%; left:50%;
+  transform:translate(-50%,-50%);
+  width:6px; height:6px; border-radius:50%;
+  background:rgba(74,158,255,0.9);
+}
+#eye-cursor.dwell { border-color:#32D74B; animation:dwellRing 1s ease forwards; }
+@keyframes dwellRing {
+  0%  { box-shadow:0 0 0 0 rgba(50,215,75,0.5); }
+  100%{ box-shadow:0 0 0 16px rgba(50,215,75,0); }
+}
+#eye-view {
+  position:fixed; inset:0; z-index:270; display:none;
+  background:#000;
+}
+#eye-video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; transform:scaleX(-1); }
+#eye-canvas { position:absolute; inset:0; width:100%; height:100%; transform:scaleX(-1); }
+#eye-top {
+  position:absolute; top:0; left:0; right:0; z-index:10;
+  padding:14px 18px; display:flex; justify-content:space-between; align-items:center;
+  background:linear-gradient(180deg,rgba(0,0,0,.6) 0%,transparent 100%);
+  pointer-events:none;
+}
+.et-txt { font-size:10px; color:rgba(255,255,255,.7); letter-spacing:1px; }
+#et-pill { background:rgba(0,0,0,.4); border:1px solid rgba(255,255,255,.16); border-radius:20px; padding:4px 13px; font-size:10px; letter-spacing:2px; color:rgba(255,255,255,.82); backdrop-filter:blur(12px); }
+#eye-stats {
+  position:absolute; bottom:80px; left:50%; transform:translateX(-50%);
+  display:flex; gap:10px; z-index:10; pointer-events:none;
+}
+.es-box { background:rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.12); border-radius:12px; padding:7px 12px; backdrop-filter:blur(12px); text-align:center; }
+.es-val { font-size:14px; font-weight:700; color:var(--blue); }
+.es-lbl { font-size:8px; color:rgba(255,255,255,.45); letter-spacing:1px; margin-top:2px; }
+#eye-dock { position:absolute; bottom:0; left:0; right:0; display:flex; justify-content:center; gap:10px; padding:0 0 22px; background:linear-gradient(0deg,rgba(0,0,0,.65) 0%,transparent 100%); z-index:10; }
+#eye-gaze-dot {
+  position:absolute; width:20px; height:20px; border-radius:50%;
+  background:rgba(74,158,255,.5); border:1.5px solid rgba(74,158,255,.9);
+  pointer-events:none; z-index:10; transform:translate(-50%,-50%);
+  display:none; transition:left .06s, top .06s;
+  box-shadow:0 0 12px rgba(74,158,255,.4);
+}
+#eye-info {
+  position:absolute; top:70px; left:50%; transform:translateX(-50%);
+  width:min(82vw,290px); background:rgba(0,0,0,.55);
+  border:1px solid rgba(255,255,255,.14); border-radius:18px;
+  padding:12px 15px; backdrop-filter:blur(28px); z-index:10;
+  display:none; animation:fadeUp .25s ease;
+}
+.ei-lbl { font-size:9px; letter-spacing:2px; color:rgba(74,158,255,.8); margin-bottom:5px; }
+.ei-val { font-size:15px; font-weight:600; color:#fff; margin-bottom:3px; }
+.ei-sub { font-size:11px; color:rgba(255,255,255,.55); line-height:1.5; }
+
+/* ── BROWSER ── */
+#browser-view {
+  position:fixed; inset:0; z-index:280; display:none;
+  background:var(--bg); flex-direction:column;
+}
+#browser-bar {
+  display:flex; align-items:center; gap:8px;
+  padding:10px 14px; background:rgba(255,255,255,.05);
+  border-bottom:1px solid rgba(255,255,255,.08);
+  flex-shrink:0;
+}
+#browser-back, #browser-fwd, #browser-reload, #browser-home, #browser-exit-btn {
+  width:34px; height:34px; border-radius:10px; border:none;
+  background:rgba(255,255,255,.08); color:var(--text);
+  font-size:14px; cursor:pointer; display:flex;
+  align-items:center; justify-content:center; flex-shrink:0;
+  transition:background .15s;
+}
+#browser-back:active,#browser-fwd:active,#browser-reload:active,#browser-home:active,#browser-exit-btn:active { background:rgba(255,255,255,.15); }
+#url-bar {
+  flex:1; background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.1); border-radius:12px;
+  padding:8px 14px; color:var(--text); font-size:13px;
+  font-family:var(--font); outline:none;
+}
+#url-bar:focus { border-color:rgba(74,158,255,.5); background:rgba(74,158,255,.06); }
+#browser-go {
+  width:34px; height:34px; border-radius:10px; border:none;
+  background:var(--blue); color:#fff; font-size:14px;
+  cursor:pointer; flex-shrink:0;
+}
+#browser-tabs {
+  display:flex; gap:6px; padding:6px 14px 0;
+  overflow-x:auto; flex-shrink:0;
+  background:rgba(255,255,255,.03);
+}
+#browser-tabs::-webkit-scrollbar { display:none; }
+.b-tab {
+  display:flex; align-items:center; gap:6px;
+  padding:5px 12px; border-radius:10px 10px 0 0;
+  background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08);
+  border-bottom:none; cursor:pointer; white-space:nowrap;
+  font-size:11px; color:var(--text-2); min-width:80px; flex-shrink:0;
+  transition:background .15s;
+}
+.b-tab.active { background:rgba(255,255,255,.1); color:var(--text); }
+.b-tab-close { font-size:12px; color:var(--text-3); margin-left:2px; }
+#browser-frame-wrap { flex:1; position:relative; overflow:hidden; }
+#browser-frame {
+  position:absolute; inset:0; width:100%; height:100%;
+  border:none; background:#fff;
+}
+#browser-loading {
+  position:absolute; top:0; left:0; right:0; height:2px;
+  background:linear-gradient(90deg,var(--blue),rgba(255,255,255,.8));
+  z-index:5; transform:scaleX(0); transform-origin:left;
+  transition:transform .3s; display:none;
+}
+#browser-new-tab {
+  display:none; position:absolute; inset:0;
+  background:var(--bg); padding:24px;
+  overflow-y:auto;
+}
+.nt-greeting { font-size:22px; font-weight:600; color:var(--text); margin-bottom:20px; }
+.nt-search {
+  display:flex; gap:8px; margin-bottom:28px;
+  background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12);
+  border-radius:14px; padding:8px 14px;
+}
+#nt-search-in { flex:1; background:transparent; border:none; outline:none; color:var(--text); font-size:15px; font-family:var(--font); }
+#nt-search-in::placeholder { color:var(--text-3); }
+#nt-search-btn { background:var(--blue); border:none; color:#fff; padding:7px 16px; border-radius:10px; font-size:13px; cursor:pointer; font-family:var(--font); font-weight:600; }
+.nt-section { font-size:11px; font-weight:600; color:var(--text-2); letter-spacing:.5px; margin-bottom:10px; }
+.nt-bookmarks { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:24px; }
+.nt-bm {
+  display:flex; flex-direction:column; align-items:center; gap:6px;
+  padding:12px 6px; background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.09); border-radius:14px; cursor:pointer;
+  transition:background .15s;
+}
+.nt-bm:active { background:rgba(255,255,255,.12); }
+.nt-bm-ico { font-size:24px; }
+.nt-bm-lbl { font-size:9px; color:var(--text-2); text-align:center; }
+.nt-recents { display:flex; flex-direction:column; gap:8px; }
+.nt-recent {
+  display:flex; align-items:center; gap:10px; padding:10px 12px;
+  background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08);
+  border-radius:12px; cursor:pointer; transition:background .15s;
+}
+.nt-recent:active { background:rgba(255,255,255,.1); }
+.nt-r-ico { font-size:18px; flex-shrink:0; }
+.nt-r-title { font-size:13px; color:var(--text); font-weight:500; }
+.nt-r-url { font-size:10px; color:var(--text-3); margin-top:1px; }
+
+/* ── PHONE INTEGRATION ── */
+#phone-panel-overlay { }
+.phone-device {
+  display:flex; align-items:center; gap:12px; padding:12px 14px;
+  background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08);
+  border-radius:14px; margin-bottom:8px; cursor:pointer; transition:background .15s;
+}
+.phone-device:active { background:rgba(255,255,255,.1); }
+.ph-ico { font-size:26px; flex-shrink:0; }
+.ph-info { flex:1; }
+.ph-name { font-size:13px; font-weight:600; color:var(--text); }
+.ph-sub  { font-size:11px; color:var(--text-2); margin-top:2px; }
+.ph-status { font-size:10px; font-weight:600; padding:3px 9px; border-radius:8px; flex-shrink:0; }
+.ph-connected   { background:rgba(50,215,75,.15);  color:var(--green); }
+.ph-scanning    { background:rgba(74,158,255,.15); color:var(--blue); }
+.ph-disconnected{ background:rgba(255,255,255,.08); color:var(--text-3); }
+#ph-qr-box {
+  background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08);
+  border-radius:14px; padding:20px; text-align:center; margin-bottom:14px;
+}
+#ph-qr-canvas { border-radius:8px; margin:0 auto 10px; display:block; }
+.ph-connect-btn {
+  width:100%; padding:12px; border-radius:12px; border:none;
+  font-size:14px; font-weight:600; cursor:pointer; font-family:var(--font);
+  transition:transform .15s;
+}
+.ph-connect-btn:active { transform:scale(.97); }
+.ph-section { font-size:11px; font-weight:600; color:var(--text-2); letter-spacing:.5px; margin:16px 0 8px; }
+.ph-feature-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:11px 0; border-bottom:1px solid rgba(255,255,255,.06);
+}
+.ph-feature-row:last-child { border-bottom:none; }
+.ph-feat-l { display:flex; align-items:center; gap:10px; }
+.ph-feat-ico { font-size:18px; }
+.ph-feat-name { font-size:13px; color:var(--text); }
+.ph-feat-sub  { font-size:11px; color:var(--text-2); margin-top:1px; }
+
 #spatial-view {
   position:fixed; inset:0; z-index:260; display:none;
   background:#000; overflow:hidden;
@@ -591,7 +782,7 @@ body {
 <div id="boot">
   <div class="b-logo">⬡</div>
   <div class="b-name">JARVIS</div>
-  <div class="b-sub">OPERATING SYSTEM · v6.0 · SPATIAL UI</div>
+  <div class="b-sub">OPERATING SYSTEM · v7.0 · EYE + BROWSER + PHONE</div>
   <div class="b-track"><div class="b-fill" id="b-fill"></div></div>
 </div>
 
@@ -717,6 +908,75 @@ body {
   </div>
 </div>
 
+<!-- ══ EYE TRACKING VIEW ══ -->
+<div id="eye-view">
+  <video id="eye-video" autoplay playsinline muted></video>
+  <canvas id="eye-canvas"></canvas>
+  <div id="eye-gaze-dot"></div>
+  <div id="eye-top">
+    <div class="et-txt" id="et-time">00:00</div>
+    <div id="et-pill">EYE TRACKING</div>
+    <div class="et-txt" id="et-fps">-- FPS</div>
+  </div>
+  <div id="eye-info">
+    <div class="ei-lbl" id="ei-lbl">GAZE DETECTED</div>
+    <div class="ei-val" id="ei-val">—</div>
+    <div class="ei-sub" id="ei-sub">—</div>
+  </div>
+  <div id="eye-stats">
+    <div class="es-box"><div class="es-val" id="et-blinks">0</div><div class="es-lbl">BLINKS</div></div>
+    <div class="es-box"><div class="es-val" id="et-dwell">0</div><div class="es-lbl">DWELLS</div></div>
+    <div class="es-box"><div class="es-val" id="et-mode">TRACK</div><div class="es-lbl">MODE</div></div>
+  </div>
+  <div id="eye-dock">
+    <div class="ar-btn" id="et-dwell-btn" onclick="etToggleDwell()" title="Dwell click">⏱</div>
+    <div class="ar-btn" id="et-cal-btn"   onclick="etCalibrate()"   title="Calibrate">🎯</div>
+    <div class="ar-btn"                    onclick="etVoice()"       title="Voice">🎤</div>
+    <div class="ar-btn ar-exit"            onclick="exitEye()"       title="Exit">✕</div>
+  </div>
+</div>
+
+<!-- ══ BROWSER VIEW ══ -->
+<div id="browser-view" style="display:none;flex-direction:column;">
+  <div id="browser-bar">
+    <button id="browser-back"   onclick="bBack()">←</button>
+    <button id="browser-fwd"    onclick="bFwd()">→</button>
+    <button id="browser-reload" onclick="bReload()">↺</button>
+    <input  id="url-bar" placeholder="Search or enter URL…" onkeydown="if(event.key==='Enter')bGo()"/>
+    <button id="browser-go"     onclick="bGo()">→</button>
+    <button id="browser-home"   onclick="bHome()">⬡</button>
+    <button id="browser-exit-btn" onclick="exitBrowser()" style="background:rgba(255,69,58,.2);border-color:rgba(255,69,58,.3)">✕</button>
+  </div>
+  <div id="browser-tabs"></div>
+  <div id="browser-loading"></div>
+  <div id="browser-frame-wrap">
+    <div id="browser-new-tab">
+      <div class="nt-greeting" id="nt-greet">Good morning, Sundaram</div>
+      <div class="nt-search">
+        <input id="nt-search-in" placeholder="Search Google or enter a URL…" onkeydown="if(event.key==='Enter')bSearch()"/>
+        <button id="nt-search-btn" onclick="bSearch()">Search</button>
+      </div>
+      <div class="nt-section">Bookmarks</div>
+      <div class="nt-bookmarks">
+        <div class="nt-bm" onclick="bNavigate('https://google.com')"><div class="nt-bm-ico">🔍</div><div class="nt-bm-lbl">Google</div></div>
+        <div class="nt-bm" onclick="bNavigate('https://youtube.com')"><div class="nt-bm-ico">▶️</div><div class="nt-bm-lbl">YouTube</div></div>
+        <div class="nt-bm" onclick="bNavigate('https://github.com')"><div class="nt-bm-ico">💻</div><div class="nt-bm-lbl">GitHub</div></div>
+        <div class="nt-bm" onclick="bNavigate('https://wikipedia.org')"><div class="nt-bm-ico">📖</div><div class="nt-bm-lbl">Wikipedia</div></div>
+        <div class="nt-bm" onclick="bNavigate('https://maps.google.com')"><div class="nt-bm-ico">🗺</div><div class="nt-bm-lbl">Maps</div></div>
+        <div class="nt-bm" onclick="bNavigate('https://translate.google.com')"><div class="nt-bm-ico">🌐</div><div class="nt-bm-lbl">Translate</div></div>
+        <div class="nt-bm" onclick="bNavigate('https://weather.com')"><div class="nt-bm-ico">🌤</div><div class="nt-bm-lbl">Weather</div></div>
+        <div class="nt-bm" onclick="bNavigate('https://news.google.com')"><div class="nt-bm-ico">📰</div><div class="nt-bm-lbl">News</div></div>
+      </div>
+      <div class="nt-section">Quick Links</div>
+      <div class="nt-recents" id="nt-recents"></div>
+    </div>
+    <iframe id="browser-frame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups" style="display:none"></iframe>
+  </div>
+</div>
+
+<!-- ══ EYE CURSOR (global) ══ -->
+<div id="eye-cursor"></div>
+
 <!-- ══ OS SHELL ══ -->
 <div id="os">
   <!-- STATUS BAR -->
@@ -782,6 +1042,21 @@ body {
       <div class="gc app-tile fu d4" onclick="openPanel('settings')">
         <div class="app-ico" style="background:linear-gradient(145deg,#1a1a2a,#0d0d18)">⚙️</div>
         <div class="app-name">Settings</div>
+      </div>
+      <div class="gc app-tile fu d4" onclick="launchEye()">
+        <div class="app-ico" style="background:linear-gradient(145deg,#1a2a1a,#0d180a)">👁</div>
+        <div class="app-name">Eye Track</div>
+        <div class="app-badge" style="background:var(--blue);font-size:8px;">NEW</div>
+      </div>
+      <div class="gc app-tile fu d5" onclick="launchBrowser()">
+        <div class="app-ico" style="background:linear-gradient(145deg,#2a1a0d,#180e06)">🌐</div>
+        <div class="app-name">Browser</div>
+        <div class="app-badge" style="background:var(--blue);font-size:8px;">NEW</div>
+      </div>
+      <div class="gc app-tile fu d5" onclick="openPanel('phone')">
+        <div class="app-ico" style="background:linear-gradient(145deg,#1a1a1a,#0d0d0d)">📱</div>
+        <div class="app-name">My Phone</div>
+        <div class="app-badge" style="background:var(--green);font-size:8px;">LINK</div>
       </div>
     </div>
 
@@ -940,8 +1215,8 @@ body {
         <button class="tog" id="tog-gyro" onclick="toggle('gyro')"></button>
       </div>
       <div class="set-row" style="border:none">
-        <div class="set-l"><div class="set-ico" style="background:rgba(255,255,255,.07)">ℹ️</div><div><div class="set-label">JARVIS OS v6.0</div><div class="set-sub">Sundaram Industries · Phase 6 Complete</div></div></div>
-        <div class="set-val">v6.0</div>
+        <div class="set-l"><div class="set-ico" style="background:rgba(255,255,255,.07)">ℹ️</div><div><div class="set-label">JARVIS OS v7.0</div><div class="set-sub">Sundaram Industries · Phase 7 Complete</div></div></div>
+        <div class="set-val">v7.0</div>
       </div>
     </div>
   </div>
@@ -960,6 +1235,65 @@ body {
   </div>
 </div>
 
+<!-- PHONE INTEGRATION -->
+<div class="p-overlay" id="p-phone" onclick="bgClose(event,'phone')">
+  <div class="p-sheet">
+    <div class="p-handle"></div>
+    <div class="p-head"><div class="p-title">📱 Phone Integration</div><button class="p-close" onclick="closePanel('phone')">✕</button></div>
+    <div class="p-body">
+      <!-- QR Code to connect -->
+      <div id="ph-qr-box">
+        <canvas id="ph-qr-canvas" width="140" height="140"></canvas>
+        <div style="font-size:12px;color:var(--text-2);margin-bottom:4px;">Scan with your phone</div>
+        <div style="font-size:10px;color:var(--text-3);" id="ph-url-display">Open JARVIS OS on phone browser</div>
+      </div>
+      <!-- Detected devices -->
+      <div class="ph-section">Detected Devices</div>
+      <div class="phone-device" id="ph-this-device">
+        <div class="ph-ico">📱</div>
+        <div class="ph-info">
+          <div class="ph-name">This Device</div>
+          <div class="ph-sub">Android · Chrome · Same network</div>
+        </div>
+        <div class="ph-status ph-connected">Active</div>
+      </div>
+      <div class="phone-device" onclick="phConnect()">
+        <div class="ph-ico">📲</div>
+        <div class="ph-info">
+          <div class="ph-name" id="ph-remote-name">Nearby Phone</div>
+          <div class="ph-sub">Scan QR code to pair</div>
+        </div>
+        <div class="ph-status ph-scanning" id="ph-remote-status">Waiting…</div>
+      </div>
+      <!-- Features when connected -->
+      <div class="ph-section">Phone as Headset Controller</div>
+      <div class="ph-feature-row">
+        <div class="ph-feat-l"><div class="ph-feat-ico">📺</div><div><div class="ph-feat-name">Mirror Display</div><div class="ph-feat-sub">See headset screen on phone</div></div></div>
+        <button class="tog" id="tog-mirror" onclick="phToggle('mirror')"></button>
+      </div>
+      <div class="ph-feature-row">
+        <div class="ph-feat-l"><div class="ph-feat-ico">🎤</div><div><div class="ph-feat-name">Phone as Mic</div><div class="ph-feat-sub">Use phone microphone wirelessly</div></div></div>
+        <button class="tog" id="tog-phmic" onclick="phToggle('phmic')"></button>
+      </div>
+      <div class="ph-feature-row">
+        <div class="ph-feat-l"><div class="ph-feat-ico">🔋</div><div><div class="ph-feat-name">Battery Status</div><div class="ph-feat-sub">Monitor headset power from phone</div></div></div>
+        <button class="tog on" id="tog-phbat" onclick="phToggle('phbat')"></button>
+      </div>
+      <div class="ph-feature-row">
+        <div class="ph-feat-l"><div class="ph-feat-ico">📷</div><div><div class="ph-feat-name">Phone Camera Feed</div><div class="ph-feat-sub">Stream phone camera to headset</div></div></div>
+        <button class="tog" id="tog-phcam" onclick="phToggle('phcam')"></button>
+      </div>
+      <div class="ph-feature-row" style="border:none">
+        <div class="ph-feat-l"><div class="ph-feat-ico">🎮</div><div><div class="ph-feat-name">Phone as Controller</div><div class="ph-feat-sub">Use phone touchscreen as trackpad</div></div></div>
+        <button class="tog" id="tog-phctrl" onclick="phToggle('phctrl')"></button>
+      </div>
+      <button class="ph-connect-btn" style="background:var(--blue);color:#fff;margin-top:14px;" onclick="phOpenSelf()">
+        Open JARVIS OS on This Phone
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ OVERLAYS ══ -->
 <div id="voice-pill">
   <div class="v-waves"><div class="v-wave"></div><div class="v-wave"></div><div class="v-wave"></div><div class="v-wave"></div><div class="v-wave"></div></div>
@@ -969,7 +1303,7 @@ body {
 
 <script>
 // ══════════════════════════════════════════════════
-//  JARVIS OS v6.0 — Core System
+//  JARVIS OS v7.0 — Core System
 // ══════════════════════════════════════════════════
 
 // ── STATE ──
@@ -1009,7 +1343,7 @@ function initOS() {
   startUptime();
   startSensors();
   // Boot notifications
-  setTimeout(() => pushNotif('⬡', 'JARVIS OS v6.0', 'All systems online.'), 1500);
+  setTimeout(() => pushNotif('⬡', 'JARVIS OS v7.0', 'All systems online.'), 1500);
   setTimeout(() => pushNotif('🥽', 'AR Vision', 'Camera passthrough ready. Tap AR Vision to launch.'), 4000);
 }
 
@@ -1070,7 +1404,7 @@ function openPanel(id) {
   if (!el) return;
   el.classList.add('open');
   if (id === 'chat' && state.chatHistory.length === 0)
-    addBubble('j', 'Hello Sundaram. JARVIS OS v6.0 is online — Phase 5 complete — hand tracking active. How can I assist you?');
+    addBubble('j', 'Hello Sundaram. JARVIS OS v7.0 is online — Phase 5 complete — hand tracking active. How can I assist you?');
 }
 function closePanel(id) { const el = document.getElementById('p-' + id); if (el) el.classList.remove('open'); }
 function bgClose(e, id) { if (e.target === e.currentTarget) closePanel(id); }
@@ -1295,7 +1629,7 @@ function arVoice() { exitAR(); setTimeout(startVoice, 400); }
 // ── JARVIS AI (offline) ──
 const KB = {
   'who are you':    'I am JARVIS — Just A Rather Very Intelligent System. The OS running on your wearable AI headset. Currently at Phase 4. Phase 5 is hand tracking.',
-  'os version':     'JARVIS OS v6.0. Phase 4 is complete — boot, home screen, AR camera, sensors, notes, voice, and OS polish are all done.',
+  'os version':     'JARVIS OS v7.0. Phase 4 is complete — boot, home screen, AR camera, sensors, notes, voice, and OS polish are all done.',
   'project status': 'Phase 1-4 complete. Phase 5 is hand tracking with MediaPipe. Phase 6 is Raspberry Pi standalone. Phase 7 is eye tracking. Phase 8 is the full physical device.',
   'what is phase 5':'Phase 5 is MediaPipe hand tracking. Your front camera watches your hands and detects 21 landmark points per hand. Pinch = click. Swipe = scroll. No touching the screen needed.',
   'hardware':       'Phase 6 hardware: Raspberry Pi 5 (₹5,000), VR shell headset (₹1,200), USB camera (₹500), battery pack (₹800). Total: under ₹8,000 for a working standalone prototype.',
@@ -1316,7 +1650,7 @@ function jarvisThink(input) {
 
   // Greetings
   if (['hello','hi','hey','namaste'].some(g => q.startsWith(g)))
-    return 'Good ' + (new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening') + ', Sundaram. JARVIS OS v6.0 online. How can I assist?';
+    return 'Good ' + (new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening') + ', Sundaram. JARVIS OS v7.0 online. How can I assist?';
 
   // Farewells
   if (['bye','goodbye','later','goodnight'].some(g => q.includes(g)))
@@ -1842,405 +2176,4 @@ function showHTGesture(icon, label, dur = 1200) {
   showHTGesture._t = setTimeout(() => el.classList.remove('show'), dur);
 }
 
-function showHTInfo(label, val, sub) {
-  document.getElementById('hti-label').textContent = label;
-  document.getElementById('hti-val').textContent   = val;
-  document.getElementById('hti-sub').textContent   = sub;
-  document.getElementById('ht-info').style.display = 'block';
-  clearTimeout(showHTInfo._t);
-  showHTInfo._t = setTimeout(() => { document.getElementById('ht-info').style.display = 'none'; }, 3000);
-}
-
-// ══════════════════════════════════════════════════
-//  SPATIAL UI ENGINE — Phase 6
-//  Gyro-tracked floating windows in real space
-// ══════════════════════════════════════════════════
-
-const sp = {
-  active: false,
-  stream: null,
-  camOn: false,
-  gyroYaw: 0,   targetYaw: 0,
-  gyroPitch: 0, targetPitch: 0,
-  baseYaw: null, basePitch: null,
-  windows: [],  // {id, el, wx, wy, wz, focused, dragging}
-  focusedId: null,
-  dragState: null,
-  windowCount: 0,
-  animId: null,
-  gyroEnabled: false
-};
-
-// Window content definitions
-const SP_WINDOWS = {
-  jarvis: {
-    title: '🤖 JARVIS AI', w: 260, h: 'auto',
-    content: () => `
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <div id="sp-chat-msgs" style="max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;"></div>
-        <div style="display:flex;gap:6px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:5px 5px 5px 12px;">
-          <input id="sp-chat-in" placeholder="Ask JARVIS…" style="flex:1;background:transparent;border:none;outline:none;color:#fff;font-size:13px;font-family:var(--font);"
-            onkeydown="if(event.key==='Enter')spSendMsg()"/>
-          <button onclick="spSendMsg()" style="width:30px;height:30px;border-radius:50%;background:var(--blue);border:none;color:#fff;font-size:14px;cursor:pointer;flex-shrink:0">↑</button>
-        </div>
-      </div>`,
-    onMount: () => {
-      spAddMsg('JARVIS', 'Spatial UI online. I am floating in your physical space. Move your head — I stay in place.');
-    }
-  },
-  sensors: {
-    title: '📡 Live Sensors', w: 230, h: 'auto',
-    content: () => `
-      <div style="display:flex;flex-direction:column;gap:8px;">
-        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.07)"><span style="font-size:12px;color:rgba(255,255,255,.5)">Yaw</span><span style="font-size:12px;color:#fff;font-weight:500" id="sp-s-yaw">0°</span></div>
-        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.07)"><span style="font-size:12px;color:rgba(255,255,255,.5)">Pitch</span><span style="font-size:12px;color:#fff;font-weight:500" id="sp-s-pitch">0°</span></div>
-        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.07)"><span style="font-size:12px;color:rgba(255,255,255,.5)">Roll</span><span style="font-size:12px;color:#fff;font-weight:500" id="sp-s-roll">0°</span></div>
-        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.07)"><span style="font-size:12px;color:rgba(255,255,255,.5)">Accel X</span><span style="font-size:12px;color:#fff;font-weight:500" id="sp-s-ax">0</span></div>
-        <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="font-size:12px;color:rgba(255,255,255,.5)">Accel Y</span><span style="font-size:12px;color:#fff;font-weight:500" id="sp-s-ay">0</span></div>
-      </div>`,
-    onMount: () => {}
-  },
-  notes: {
-    title: '📝 Notes', w: 240, h: 'auto',
-    content: () => `
-      <textarea id="sp-notes-ta" placeholder="Type a note…"
-        style="width:100%;height:100px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#fff;font-family:var(--font);font-size:13px;padding:10px;outline:none;resize:none;line-height:1.5;margin-bottom:8px;"></textarea>
-      <button onclick="spSaveNote()" style="width:100%;background:var(--blue);border:none;color:#fff;padding:9px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);">Save Note</button>`,
-    onMount: () => {}
-  },
-  system: {
-    title: '🗺 Roadmap', w: 250, h: 'auto',
-    content: () => `
-      <div style="display:flex;flex-direction:column;gap:6px;font-size:12px;">
-        ${['Phase 1 — OS Shell ✓','Phase 2 — UI Polish ✓','Phase 3 — AR Camera ✓','Phase 4 — OS Polish ✓','Phase 5 — Hand Tracking ✓','Phase 6 — Spatial UI ✓','Phase 7 — Eye Tracking ⏳','Phase 8 — Hardware ⏳'].map((p,i)=>`
-          <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.06)">
-            <div style="width:20px;height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;background:${i<6?'rgba(50,215,75,.15)':'rgba(255,255,255,.06)'};color:${i<6?'#32D74B':'rgba(255,255,255,.3)'};">${i<6?'✓':i+1}</div>
-            <span style="color:${i<6?'rgba(255,255,255,.8)':'rgba(255,255,255,.35)'}">${p.replace(' ✓','').replace(' ⏳','')}</span>
-          </div>`).join('')}
-      </div>`,
-    onMount: () => {}
-  },
-  clock: {
-    title: '🕐 Clock', w: 180, h: 'auto',
-    content: () => `
-      <div style="text-align:center;padding:10px 0;">
-        <div id="sp-clock" style="font-size:36px;font-weight:200;letter-spacing:-1px;color:#fff;"></div>
-        <div id="sp-date"  style="font-size:11px;color:rgba(255,255,255,.4);margin-top:4px;letter-spacing:.5px;"></div>
-      </div>`,
-    onMount: () => {
-      const tick = () => {
-        const n = new Date();
-        const ce = document.getElementById('sp-clock');
-        const de = document.getElementById('sp-date');
-        if (ce) ce.textContent = String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0') + ':' + String(n.getSeconds()).padStart(2,'0');
-        if (de) de.textContent = n.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'});
-        if (sp.active) setTimeout(tick, 1000);
-      };
-      tick();
-    }
-  }
-};
-
-async function launchSpatial() {
-  toast('🪟','Launching Spatial UI…');
-
-  // Request gyro permission
-  await requestSpatialGyro();
-
-  // Try to get camera (optional — spatial works without it)
-  try {
-    sp.stream = await navigator.mediaDevices?.getUserMedia({
-      video:{ facingMode:'environment', width:{ideal:1280}, height:{ideal:720} }, audio:false
-    });
-    const vid = document.getElementById('spatial-camera');
-    vid.srcObject = sp.stream; vid.play();
-    sp.camOn = true;
-    document.getElementById('sp-cam-btn').classList.add('on');
-  } catch(e) {
-    // No camera — just dark background
-    document.getElementById('spatial-camera').style.display = 'none';
-  }
-
-  document.getElementById('os').style.display = 'none';
-  document.getElementById('spatial-view').style.display = 'block';
-  sp.active = true;
-
-  startSpatialLoop();
-
-  // Spawn 3 starter windows
-  setTimeout(() => spawnWindow('clock'),   400);
-  setTimeout(() => spawnWindow('jarvis'),  700);
-  setTimeout(() => spawnWindow('system'), 1000);
-
-  pushNotif('🪟','Spatial UI','Windows are anchored in space. Move your head — they stay fixed.');
-  toast('🪟','Move your head — windows stay in space!');
-}
-
-async function requestSpatialGyro() {
-  if (typeof DeviceOrientationEvent === 'undefined') return;
-  if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-    const r = await DeviceOrientationEvent.requestPermission();
-    if (r !== 'granted') { toast('⚠️','Gyro permission needed for spatial tracking'); return; }
-  }
-  window.addEventListener('deviceorientation', onSpatialGyro);
-  sp.gyroEnabled = true;
-}
-
-let spAlpha = null, spBeta = null, spGamma = null;
-function onSpatialGyro(e) {
-  if (!sp.active) return;
-  // Set base on first reading
-  if (sp.baseYaw === null)   sp.baseYaw   = e.alpha || 0;
-  if (sp.basePitch === null) sp.basePitch = e.beta  || 0;
-
-  const yaw   = ((e.alpha || 0) - sp.baseYaw)   * -1;
-  const pitch = ((e.beta  || 0) - sp.basePitch) * -1;
-
-  sp.targetYaw   = yaw   * 0.6;
-  sp.targetPitch = pitch * 0.4;
-
-  spAlpha = e.alpha; spBeta = e.beta; spGamma = e.gamma;
-
-  // Update sensor display if open
-  const sy = document.getElementById('sp-s-yaw');
-  const sp2 = document.getElementById('sp-s-pitch');
-  const sr  = document.getElementById('sp-s-roll');
-  if (sy)  sy.textContent  = Math.round(e.alpha  || 0) + '°';
-  if (sp2) sp2.textContent = Math.round(e.beta   || 0) + '°';
-  if (sr)  sr.textContent  = Math.round(e.gamma  || 0) + '°';
-
-  // Gyro dot indicator
-  const dot = document.getElementById('gyro-dot');
-  if (dot) {
-    const dx = Math.max(-14, Math.min(14, (e.gamma || 0) * 0.4));
-    const dy = Math.max(-14, Math.min(14, ((e.beta || 0) - 45) * 0.3));
-    dot.style.transform = `translate(${dx}px,${dy}px)`;
-  }
-}
-
-// ── SPATIAL RENDER LOOP ──
-function startSpatialLoop() {
-  let lastT = 0;
-  const loop = (t) => {
-    if (!sp.active) return;
-    sp.animId = requestAnimationFrame(loop);
-
-    // Smooth gyro
-    sp.gyroYaw   += (sp.targetYaw   - sp.gyroYaw)   * 0.07;
-    sp.gyroPitch += (sp.targetPitch - sp.gyroPitch)  * 0.07;
-
-    // Apply to world — moves opposite to head movement
-    // so windows appear fixed in space
-    document.getElementById('spatial-world').style.transform =
-      `translateX(${sp.gyroYaw * 3}px) translateY(${sp.gyroPitch * 2}px)`;
-
-    // Clock update
-    const n = new Date();
-    const te = document.getElementById('sp-time');
-    if (te) te.textContent = String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
-
-    // Accel readings
-    if (typeof sp._ax !== 'undefined') {
-      const ax = document.getElementById('sp-s-ax');
-      const ay = document.getElementById('sp-s-ay');
-      if (ax) ax.textContent = (sp._ax || 0).toFixed(1);
-      if (ay) ay.textContent = (sp._ay || 0).toFixed(1);
-    }
-  };
-  loop(0);
-
-  // Accel listener
-  window.addEventListener('devicemotion', e => {
-    const a = e.accelerationIncludingGravity;
-    if (a) { sp._ax = a.x; sp._ay = a.y; }
-  });
-}
-
-// ── SPAWN WINDOW ──
-let winIdCounter = 0;
-function spawnWindow(type) {
-  const def = SP_WINDOWS[type];
-  if (!def) return;
-
-  const id = 'sw-' + (++winIdCounter);
-  const world = document.getElementById('spatial-world');
-
-  // Position in viewport — spread them out
-  const cx = window.innerWidth  / 2;
-  const cy = window.innerHeight / 2;
-  const offsets = [
-    [-130,-80],[80,-80],[0,60],[-140,60],[100,60],[0,-120]
-  ];
-  const off = offsets[sp.windowCount % offsets.length];
-  const wx = cx + off[0] - (def.w || 260) / 2;
-  const wy = cy + off[1];
-
-  const el = document.createElement('div');
-  el.className = 'sw';
-  el.id = id;
-  el.style.left  = wx + 'px';
-  el.style.top   = wy + 'px';
-  el.style.width = (def.w || 260) + 'px';
-
-  el.innerHTML = `
-    <div class="sw-bar" id="${id}-bar">
-      <div class="sw-title">${def.title}</div>
-      <div class="sw-controls">
-        <button class="sw-btn sw-min" onclick="minimizeSW('${id}')"></button>
-        <button class="sw-btn sw-close" onclick="closeSW('${id}')"></button>
-      </div>
-    </div>
-    <div class="sw-body">${def.content()}</div>`;
-
-  world.appendChild(el);
-
-  // Drag
-  makeDraggable(el, id + '-bar');
-
-  // Focus on tap
-  el.addEventListener('touchstart', () => focusSW(id), { passive:true });
-  el.addEventListener('mousedown',  () => focusSW(id));
-
-  sp.windows.push({ id, el, type });
-  sp.windowCount++;
-  focusSW(id);
-  updateWinCount();
-
-  if (def.onMount) setTimeout(def.onMount, 50);
-}
-
-// ── DRAG WINDOWS ──
-function makeDraggable(el, barId) {
-  const bar = document.getElementById(barId);
-  if (!bar) return;
-  let startX, startY, startL, startT;
-
-  const onStart = (cx, cy) => {
-    focusSW(el.id);
-    startX = cx; startY = cy;
-    startL = parseInt(el.style.left) || 0;
-    startT = parseInt(el.style.top)  || 0;
-    el.style.transition = 'none';
-  };
-  const onMove = (cx, cy) => {
-    el.style.left = (startL + cx - startX) + 'px';
-    el.style.top  = (startT + cy - startY) + 'px';
-  };
-  const onEnd = () => { el.style.transition = ''; };
-
-  bar.addEventListener('touchstart', e => { if(e.touches.length===1) onStart(e.touches[0].clientX, e.touches[0].clientY); }, { passive:true });
-  bar.addEventListener('touchmove',  e => { e.stopPropagation(); onMove(e.touches[0].clientX, e.touches[0].clientY); }, { passive:true });
-  bar.addEventListener('touchend',   onEnd, { passive:true });
-  bar.addEventListener('mousedown',  e => { onStart(e.clientX, e.clientY); const mm = f => onMove(f.clientX, f.clientY); const mu = () => { onEnd(); document.removeEventListener('mousemove',mm); document.removeEventListener('mouseup',mu); }; document.addEventListener('mousemove',mm); document.addEventListener('mouseup',mu); });
-}
-
-// ── WINDOW CONTROLS ──
-function focusSW(id) {
-  sp.windows.forEach(w => w.el.classList.remove('focused'));
-  const win = sp.windows.find(w => w.id === id);
-  if (win) { win.el.classList.add('focused'); sp.focusedId = id; }
-}
-
-function closeSW(id) {
-  const idx = sp.windows.findIndex(w => w.id === id);
-  if (idx === -1) return;
-  const el = sp.windows[idx].el;
-  el.style.transition = 'opacity .2s, transform .2s';
-  el.style.opacity = '0'; el.style.transform = 'scale(.9)';
-  setTimeout(() => { el.remove(); sp.windows.splice(idx, 1); updateWinCount(); }, 200);
-}
-
-function minimizeSW(id) {
-  const win = sp.windows.find(w => w.id === id);
-  if (!win) return;
-  const body = win.el.querySelector('.sw-body');
-  if (body) { body.style.display = body.style.display === 'none' ? 'block' : 'none'; }
-}
-
-function updateWinCount() {
-  const el = document.getElementById('sp-wins');
-  if (el) el.textContent = sp.windows.length + ' WINDOW' + (sp.windows.length !== 1 ? 'S' : '');
-}
-
-// ── CAMERA TOGGLE ──
-function spToggleCamera() {
-  const vid = document.getElementById('spatial-camera');
-  sp.camOn = !sp.camOn;
-  vid.style.display = sp.camOn ? 'block' : 'none';
-  document.getElementById('sp-cam-btn').classList.toggle('on', sp.camOn);
-}
-
-// ── RESET ──
-function spResetWindows() {
-  sp.windows.forEach(w => w.el.remove());
-  sp.windows = []; sp.windowCount = 0;
-  sp.gyroYaw = 0; sp.targetYaw = 0;
-  sp.gyroPitch = 0; sp.targetPitch = 0;
-  sp.baseYaw = null; sp.basePitch = null;
-  updateWinCount();
-  setTimeout(() => { spawnWindow('clock'); spawnWindow('jarvis'); }, 100);
-  toast('↺','View reset');
-}
-
-// ── EXIT ──
-function exitSpatial() {
-  sp.active = false;
-  sp.stream?.getTracks().forEach(t => t.stop());
-  sp.stream = null;
-  window.removeEventListener('deviceorientation', onSpatialGyro);
-  if (sp.animId) { cancelAnimationFrame(sp.animId); sp.animId = null; }
-  // Clear windows
-  document.getElementById('spatial-world').innerHTML = '';
-  sp.windows = []; sp.windowCount = 0;
-  sp.gyroYaw = 0; sp.gyroPitch = 0;
-  sp.baseYaw = null; sp.basePitch = null;
-  document.getElementById('spatial-view').style.display = 'none';
-  document.getElementById('spatial-camera').style.display = 'block';
-  document.getElementById('os').style.display = 'flex';
-  toast('⬡','Spatial UI closed');
-}
-
-// ── SPATIAL JARVIS CHAT ──
-function spAddMsg(who, text) {
-  const msgs = document.getElementById('sp-chat-msgs');
-  if (!msgs) return;
-  const div = document.createElement('div');
-  div.style.cssText = `align-self:${who==='YOU'?'flex-end':'flex-start'};max-width:88%;padding:8px 12px;border-radius:16px;font-size:12px;line-height:1.5;background:${who==='YOU'?'var(--blue)':'rgba(255,255,255,.09)'};color:${who==='YOU'?'#fff':'rgba(255,255,255,.9)'};border:${who==='YOU'?'none':'1px solid rgba(255,255,255,.1)'};`;
-  div.textContent = text;
-  msgs.appendChild(div);
-  msgs.scrollTop = msgs.scrollHeight;
-}
-
-async function spSendMsg() {
-  const inp = document.getElementById('sp-chat-in');
-  if (!inp) return;
-  const text = inp.value.trim(); if (!text) return;
-  inp.value = '';
-  spAddMsg('YOU', text);
-  await new Promise(r => setTimeout(r, 300));
-  const reply = jarvisThink(text);
-  spAddMsg('JARVIS', reply);
-}
-
-// ── SPATIAL NOTES ──
-function spSaveNote() {
-  const ta = document.getElementById('sp-notes-ta');
-  if (!ta || !ta.value.trim()) return;
-  savedNotes.unshift({ text: ta.value.trim(), time: new Date() });
-  ta.value = '';
-  pushNotif('📝','Note saved','Spatial note added to your collection.');
-  toast('📝','Note saved');
-}
-
-// ── UPDATE ROADMAP PHASE 6 ──
-function toast(ico, text) {
-  document.getElementById('t-ico').textContent = ico;
-  document.getElementById('t-text').textContent = text;
-  const el = document.getElementById('toast');
-  el.classList.add('show');
-  clearTimeout(toast._t);
-  toast._t = setTimeout(() => el.classList.remove('show'), 2800);
-}
-</script>
-</body>
-</html>
+function showHTInfo
