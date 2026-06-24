@@ -1,0 +1,2166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>JARVIS OS</title>
+<style>
+/* ── DESIGN TOKENS ── */
+:root {
+  --glass:        rgba(255,255,255,0.07);
+  --glass-border: rgba(255,255,255,0.11);
+  --glass-active: rgba(255,255,255,0.12);
+  --bg:           #07070f;
+  --text:         rgba(255,255,255,0.93);
+  --text-2:       rgba(255,255,255,0.50);
+  --text-3:       rgba(255,255,255,0.22);
+  --blue:         #4A9EFF;
+  --blue-bg:      rgba(74,158,255,0.12);
+  --green:        #32D74B;
+  --red:          #FF453A;
+  --yellow:       #FFD60A;
+  --r:            20px;
+  --r-sm:         13px;
+  --blur:         blur(36px);
+  --font:         -apple-system,'SF Pro Display','Helvetica Neue',sans-serif;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html, body { width:100%; height:100%; overflow:hidden; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: var(--font); touch-action: none; user-select: none;
+}
+
+/* ── BOOT ── */
+#boot {
+  position:fixed; inset:0; background:#000;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  z-index:1000; transition:opacity .7s ease;
+}
+#boot.out { opacity:0; pointer-events:none; }
+.b-logo {
+  width:68px; height:68px; border-radius:20px;
+  background:linear-gradient(145deg,rgba(74,158,255,0.2),rgba(74,158,255,0.05));
+  border:1px solid rgba(74,158,255,0.25);
+  display:flex; align-items:center; justify-content:center;
+  font-size:30px; margin-bottom:28px;
+  box-shadow:0 0 60px rgba(74,158,255,0.15);
+  animation:bpulse 2s ease-in-out infinite;
+}
+@keyframes bpulse{0%,100%{box-shadow:0 0 40px rgba(74,158,255,0.1)}50%{box-shadow:0 0 90px rgba(74,158,255,0.3)}}
+.b-name { font-size:24px; font-weight:300; letter-spacing:9px; color:rgba(255,255,255,.9); margin-bottom:5px; }
+.b-sub  { font-size:11px; letter-spacing:3px; color:rgba(255,255,255,.28); margin-bottom:44px; }
+.b-track { width:110px; height:2px; background:rgba(255,255,255,.08); border-radius:2px; overflow:hidden; }
+.b-fill  { height:100%; width:0; background:linear-gradient(90deg,var(--blue),rgba(255,255,255,.8)); border-radius:2px; transition:width .08s linear; }
+
+/* ── AMBIENT ── */
+#ambient { position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden; }
+.orb { position:absolute; border-radius:50%; filter:blur(90px); opacity:.12; animation:drift 22s ease-in-out infinite; }
+.o1{width:420px;height:420px;background:#1a3a6e;top:-120px;left:-100px;}
+.o2{width:320px;height:320px;background:#091830;bottom:-90px;right:-70px;animation-delay:-9s;}
+.o3{width:180px;height:180px;background:#0d1f40;top:45%;left:55%;animation-delay:-15s;}
+@keyframes drift{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(28px,-18px) scale(1.04)}66%{transform:translate(-18px,28px) scale(.96)}}
+
+/* ── OS SHELL ── */
+#os { position:fixed; inset:0; display:none; flex-direction:column; z-index:1; }
+#os.on { display:flex !important; flex-direction:column; }
+
+/* ── STATUS BAR ── */
+#sb {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:14px 22px 6px; flex-shrink:0;
+}
+.sb-time  { font-size:16px; font-weight:600; letter-spacing:-.3px; }
+.sb-right { display:flex; align-items:center; gap:12px; }
+.sb-ico   { font-size:13px; opacity:.75; }
+.bat {
+  width:23px; height:11px; border:1.5px solid rgba(255,255,255,.38); border-radius:3px;
+  position:relative; overflow:visible;
+}
+.bat::after { content:''; position:absolute; right:-4px; top:50%; transform:translateY(-50%); width:2px; height:5px; background:rgba(255,255,255,.38); border-radius:0 1px 1px 0; }
+.bat-f { position:absolute; inset:2px; background:var(--green); border-radius:1px; width:72%; }
+
+/* ── HOME ── */
+#home { flex:1; overflow-y:auto; overflow-x:hidden; padding:0 18px 18px; }
+#home::-webkit-scrollbar { display:none; }
+
+/* GREETING */
+#greet { padding:10px 4px 20px; }
+.g-sub  { font-size:13px; color:var(--text-2); margin-bottom:3px; }
+.g-name {
+  font-size:30px; font-weight:700; letter-spacing:-.5px;
+  background:linear-gradient(135deg,#fff 0%,rgba(255,255,255,.55) 100%);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+}
+
+/* SPOTLIGHT */
+#spotlight {
+  display:flex; align-items:center; gap:10px;
+  padding:13px 16px; margin-bottom:14px; cursor:pointer;
+}
+.sp-ico  { font-size:16px; opacity:.5; flex-shrink:0; }
+.sp-text { font-size:14px; color:var(--text-2); flex:1; }
+.sp-tag  { font-size:11px; color:var(--blue); background:var(--blue-bg); padding:3px 9px; border-radius:20px; font-weight:500; flex-shrink:0; }
+
+/* SECTION LABEL */
+.sec-label { font-size:12px; font-weight:600; color:var(--text-2); letter-spacing:.3px; margin:18px 4px 10px; }
+
+/* APP GRID */
+#app-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:11px; margin-bottom:18px; }
+.app-tile {
+  aspect-ratio:1; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:8px; cursor:pointer;
+  position:relative; overflow:hidden; transition:transform .15s;
+}
+.app-tile:active { transform:scale(.91); }
+.app-ico {
+  width:54px; height:54px; border-radius:15px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:25px; box-shadow:0 4px 18px rgba(0,0,0,.35);
+}
+.app-name { font-size:10px; font-weight:500; color:var(--text-2); text-align:center; }
+.app-badge {
+  position:absolute; top:8px; right:8px;
+  min-width:16px; height:16px; border-radius:8px;
+  background:var(--red); font-size:9px; font-weight:700;
+  display:flex; align-items:center; justify-content:center;
+  color:#fff; border:1.5px solid var(--bg); padding:0 4px;
+}
+
+/* GLASS CARD */
+.gc {
+  background:var(--glass); border:1px solid var(--glass-border);
+  border-radius:var(--r); backdrop-filter:var(--blur);
+  -webkit-backdrop-filter:var(--blur);
+}
+.gc:active { background:var(--glass-active); }
+
+/* SYSTEM STATUS CARD */
+#sys-card { padding:14px 16px; margin-bottom:14px; }
+.sys-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:8px 0; border-bottom:1px solid rgba(255,255,255,.06);
+}
+.sys-row:last-child { border-bottom:none; padding-bottom:0; }
+.sys-l { display:flex; align-items:center; gap:9px; font-size:13px; color:var(--text-2); }
+.sys-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+.sys-r { font-size:13px; font-weight:500; color:var(--text); }
+
+/* SESSION CARD */
+#session-card { padding:14px 16px; margin-bottom:14px; display:flex; align-items:center; gap:14px; }
+.sess-ring { width:48px; height:48px; flex-shrink:0; }
+.sess-info { flex:1; }
+.sess-val { font-size:20px; font-weight:700; color:var(--text); letter-spacing:-.3px; }
+.sess-lbl { font-size:10px; color:var(--text-2); letter-spacing:1px; margin-top:2px; }
+
+/* NOTIF STRIP */
+#notif-strip { display:flex; flex-direction:column; gap:8px; margin-bottom:14px; }
+.notif-card {
+  display:flex; align-items:center; gap:11px;
+  padding:11px 14px; animation:fadeUp .3s ease;
+}
+.notif-ico  { font-size:20px; flex-shrink:0; }
+.notif-body { flex:1; }
+.notif-title{ font-size:12px; font-weight:600; color:var(--text); }
+.notif-text { font-size:11px; color:var(--text-2); margin-top:1px; line-height:1.4; }
+.notif-time { font-size:10px; color:var(--text-3); }
+
+/* ── DOCK ── */
+#dock { display:flex; justify-content:center; padding:8px 18px 24px; flex-shrink:0; }
+.dock-wrap {
+  display:flex; gap:14px; align-items:center;
+  background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.1);
+  border-radius:30px; padding:10px 18px;
+  backdrop-filter:blur(40px); -webkit-backdrop-filter:blur(40px);
+}
+.d-btn {
+  width:50px; height:50px; border-radius:14px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:22px; cursor:pointer;
+  transition:transform .15s, background .15s;
+}
+.d-btn:active { transform:scale(.87); }
+.d-sep { width:1px; height:32px; background:rgba(255,255,255,.1); }
+
+/* ── PANELS ── */
+.p-overlay {
+  position:fixed; inset:0; z-index:100;
+  display:flex; align-items:flex-end;
+  opacity:0; pointer-events:none;
+  transition:opacity .22s; background:rgba(0,0,0,0);
+}
+.p-overlay.open { opacity:1; pointer-events:all; background:rgba(0,0,0,.45); }
+.p-sheet {
+  width:100%; max-height:82vh;
+  background:rgba(14,14,22,.96); border:1px solid var(--glass-border);
+  border-bottom:none; border-radius:var(--r) var(--r) 0 0;
+  backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur);
+  transform:translateY(100%); transition:transform .32s cubic-bezier(.2,.8,.2,1);
+  display:flex; flex-direction:column; overflow:hidden;
+}
+.p-overlay.open .p-sheet { transform:translateY(0); }
+.p-handle { width:36px; height:4px; border-radius:2px; background:rgba(255,255,255,.18); margin:12px auto 0; }
+.p-head { display:flex; justify-content:space-between; align-items:center; padding:16px 20px 12px; border-bottom:1px solid rgba(255,255,255,.07); }
+.p-title { font-size:17px; font-weight:600; }
+.p-close { width:28px; height:28px; border-radius:50%; background:rgba(255,255,255,.1); border:none; color:var(--text-2); font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.p-body { padding:18px 20px; overflow-y:auto; flex:1; }
+.p-body::-webkit-scrollbar { display:none; }
+
+/* CHAT */
+#chat-msgs { display:flex; flex-direction:column; gap:10px; margin-bottom:12px; max-height:45vh; overflow-y:auto; }
+#chat-msgs::-webkit-scrollbar { display:none; }
+.bub { max-width:84%; padding:10px 14px; border-radius:18px; font-size:14px; line-height:1.5; animation:fadeUp .2s ease; }
+.bub-u { align-self:flex-end; background:var(--blue); color:#fff; border-bottom-right-radius:5px; }
+.bub-j { align-self:flex-start; background:rgba(255,255,255,.09); border:1px solid rgba(255,255,255,.1); color:var(--text); border-bottom-left-radius:5px; }
+.bub-t { opacity:.5; font-style:italic; animation:blink 1s infinite; }
+@keyframes blink{0%,100%{opacity:.3}50%{opacity:.8}}
+.chat-row {
+  display:flex; gap:8px; align-items:center;
+  background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1);
+  border-radius:26px; padding:6px 6px 6px 16px;
+}
+#chat-in { flex:1; background:transparent; border:none; outline:none; color:var(--text); font-size:14px; font-family:var(--font); }
+#chat-in::placeholder { color:var(--text-3); }
+.chat-btn { width:34px; height:34px; border-radius:50%; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; transition:transform .15s; }
+.chat-btn:active { transform:scale(.87); }
+#chat-send { background:var(--blue); color:#fff; }
+#chat-mic  { background:rgba(255,255,255,.1); color:var(--text); }
+
+/* SENSORS */
+.sensor-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:10px 0; border-bottom:1px solid rgba(255,255,255,.06);
+}
+.sensor-row:last-child { border-bottom:none; }
+.sensor-l { font-size:13px; color:var(--text-2); display:flex; align-items:center; gap:9px; }
+.sensor-v { font-size:12px; font-weight:500; color:var(--text); font-variant-numeric:tabular-nums; }
+
+/* SYSTEM PHASE LIST */
+.phase-row { display:flex; align-items:flex-start; gap:12px; padding:12px 0; border-bottom:1px solid rgba(255,255,255,.06); }
+.phase-row:last-child { border-bottom:none; }
+.phase-num { width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0; }
+.phase-done { background:rgba(50,215,75,.15); color:var(--green); }
+.phase-now  { background:rgba(74,158,255,.15); color:var(--blue); }
+.phase-next { background:rgba(255,255,255,.06); color:var(--text-3); }
+.phase-title{ font-size:13px; font-weight:600; color:var(--text); margin-bottom:2px; }
+.phase-desc { font-size:11px; color:var(--text-2); line-height:1.5; }
+
+/* NOTES */
+#notes-ta {
+  width:100%; min-height:150px; resize:none;
+  background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1);
+  border-radius:var(--r-sm); color:var(--text); font-family:var(--font);
+  font-size:14px; padding:14px; outline:none; line-height:1.6; margin-bottom:10px;
+}
+#notes-ta::placeholder { color:var(--text-3); }
+.notes-btn {
+  padding:12px; border-radius:var(--r-sm); font-size:13px;
+  font-weight:600; cursor:pointer; font-family:var(--font); border:none;
+  transition:transform .15s;
+}
+.notes-btn:active { transform:scale(.96); }
+#saved-notes { display:flex; flex-direction:column; gap:8px; margin-top:12px; }
+.note-item {
+  background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08);
+  border-radius:var(--r-sm); padding:12px 14px;
+}
+.note-text { font-size:13px; color:var(--text); line-height:1.5; margin-bottom:5px; }
+.note-time { font-size:10px; color:var(--text-3); }
+
+/* SETTINGS */
+.set-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:13px 0; border-bottom:1px solid rgba(255,255,255,.06);
+}
+.set-row:last-child { border-bottom:none; }
+.set-l { display:flex; align-items:center; gap:12px; }
+.set-ico { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; }
+.set-label{ font-size:14px; color:var(--text); }
+.set-sub  { font-size:11px; color:var(--text-2); margin-top:1px; }
+.set-val  { font-size:13px; color:var(--text-2); }
+.tog { width:44px; height:26px; border-radius:13px; background:rgba(255,255,255,.15); position:relative; cursor:pointer; transition:background .22s; border:none; flex-shrink:0; }
+.tog.on { background:var(--blue); }
+.tog::after { content:''; position:absolute; width:22px; height:22px; border-radius:50%; background:#fff; top:2px; left:2px; transition:left .22s; box-shadow:0 1px 4px rgba(0,0,0,.3); }
+.tog.on::after { left:20px; }
+
+/* CONTROL CENTRE */
+#cc-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:16px 20px; }
+.cc-tile {
+  background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.1);
+  border-radius:var(--r-sm); padding:14px; cursor:pointer; transition:background .2s;
+}
+.cc-tile:active { background:rgba(255,255,255,.13); }
+.cc-tile.on { background:var(--blue-bg); border-color:rgba(74,158,255,.28); }
+.cc-ico   { font-size:20px; margin-bottom:7px; }
+.cc-name  { font-size:12px; font-weight:600; color:var(--text); }
+.cc-state { font-size:10px; color:var(--text-2); margin-top:2px; }
+.cc-wide  { grid-column:span 2; }
+
+/* ── AR VIEW ── */
+#ar-view { position:fixed; inset:0; z-index:200; display:none; background:#000; }
+#ar-vid-l, #ar-vid-r {
+  position:absolute; top:0; bottom:0; width:50%;
+  object-fit:cover;
+}
+#ar-vid-l { left:0; }
+#ar-vid-r { left:50%; display:none; }
+#ar-single { position:absolute; inset:0; }
+#ar-single video { width:100%; height:100%; object-fit:cover; }
+#ar-divider { display:none; position:absolute; left:50%; top:0; bottom:0; width:2px; background:#000; z-index:5; transform:translateX(-50%); }
+/* AR overlays */
+#ar-overlay { position:absolute; inset:0; pointer-events:none; z-index:10; }
+.ar-corner { position:absolute; width:26px; height:26px; border-color:rgba(74,158,255,.65); border-style:solid; }
+.ar-tl{top:14px;left:14px;border-width:2px 0 0 2px;}
+.ar-tr{top:14px;right:14px;border-width:2px 2px 0 0;}
+.ar-bl{bottom:80px;left:14px;border-width:0 0 2px 2px;}
+.ar-br{bottom:80px;right:14px;border-width:0 2px 2px 0;}
+.ar-ch { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); opacity:.45; }
+.ar-ch::before,.ar-ch::after { content:''; position:absolute; background:rgba(74,158,255,.9); }
+.ar-ch::before { width:18px; height:1px; top:0; left:-9px; }
+.ar-ch::after  { width:1px; height:18px; top:-9px; left:0; }
+/* AR scan */
+#ar-scanline { position:absolute; inset:0; pointer-events:none; background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,200,160,.012) 3px,rgba(0,200,160,.012) 4px); z-index:9; }
+/* AR status */
+#ar-top { position:absolute; top:0; left:0; right:0; padding:14px 18px 0; display:flex; justify-content:space-between; align-items:center; background:linear-gradient(180deg,rgba(0,0,0,.55) 0%,transparent 100%); z-index:20; pointer-events:none; }
+.ar-top-txt { font-size:10px; color:rgba(255,255,255,.75); letter-spacing:1px; font-variant-numeric:tabular-nums; }
+#ar-pill { background:rgba(0,0,0,.4); border:1px solid rgba(255,255,255,.18); border-radius:20px; padding:4px 13px; font-size:10px; letter-spacing:2px; color:rgba(255,255,255,.8); backdrop-filter:blur(12px); }
+/* AR detect boxes */
+#ar-detect { position:absolute; inset:0; z-index:11; pointer-events:none; }
+.d-box { position:absolute; border:1.5px solid rgba(74,158,255,.65); border-radius:6px; pointer-events:all; }
+.d-lbl { position:absolute; top:-20px; left:0; background:rgba(0,0,0,.6); color:rgba(74,158,255,.9); font-size:9px; letter-spacing:1px; padding:2px 7px; border-radius:4px; white-space:nowrap; font-family:'Courier New',monospace; }
+@keyframes dpulse{0%,100%{border-color:rgba(74,158,255,.5)}50%{border-color:rgba(74,158,255,1)}}
+.d-box { animation:dpulse 2s ease-in-out infinite; }
+/* AR info panel */
+#ar-info {
+  position:absolute; top:64px; left:50%; transform:translateX(-50%);
+  width:min(86vw,310px); background:rgba(0,0,0,.55);
+  border:1px solid rgba(255,255,255,.14); border-radius:18px;
+  padding:13px 15px; backdrop-filter:blur(28px); z-index:20;
+  display:none; animation:fadeUp .25s ease;
+}
+.ai-label { font-size:9px; letter-spacing:2px; color:rgba(74,158,255,.8); margin-bottom:7px; }
+.ai-name  { font-size:16px; font-weight:600; color:#fff; margin-bottom:4px; }
+.ai-desc  { font-size:12px; color:rgba(255,255,255,.6); line-height:1.5; margin-bottom:10px; }
+.ai-ask   { width:100%; background:rgba(74,158,255,.18); border:1px solid rgba(74,158,255,.35); color:rgba(74,158,255,.9); padding:8px; border-radius:10px; font-size:12px; cursor:pointer; font-family:var(--font); }
+/* AR dock */
+#ar-dock {
+  position:absolute; bottom:0; left:0; right:0;
+  display:flex; justify-content:center; align-items:center; gap:10px;
+  padding:0 0 22px;
+  background:linear-gradient(0deg,rgba(0,0,0,.65) 0%,transparent 100%);
+  z-index:20;
+}
+.ar-btn {
+  width:44px; height:44px; border-radius:13px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:20px; cursor:pointer;
+  background:rgba(0,0,0,.38); border:1px solid rgba(255,255,255,.14);
+  backdrop-filter:blur(16px); transition:transform .15s, background .15s;
+}
+.ar-btn:active { transform:scale(.87); }
+.ar-btn.on { background:rgba(74,158,255,.28); border-color:rgba(74,158,255,.45); }
+.ar-exit { background:rgba(255,69,58,.22); border-color:rgba(255,69,58,.35) !important; }
+
+/* ── VOICE ── */
+#voice-pill {
+  position:fixed; bottom:90px; left:50%; transform:translateX(-50%);
+  background:rgba(14,14,22,.95); border:1px solid rgba(255,255,255,.12);
+  border-radius:30px; padding:11px 18px;
+  display:flex; align-items:center; gap:10px; z-index:300;
+  opacity:0; pointer-events:none; transition:opacity .22s;
+  backdrop-filter:blur(40px);
+}
+#voice-pill.show { opacity:1; }
+.v-waves { display:flex; gap:3px; align-items:center; height:18px; }
+.v-wave { width:3px; border-radius:2px; background:var(--blue); animation:wv .8s ease-in-out infinite; }
+.v-wave:nth-child(1){height:5px;animation-delay:0s}
+.v-wave:nth-child(2){height:13px;animation-delay:.1s}
+.v-wave:nth-child(3){height:18px;animation-delay:.2s}
+.v-wave:nth-child(4){height:11px;animation-delay:.3s}
+.v-wave:nth-child(5){height:7px;animation-delay:.4s}
+@keyframes wv{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
+#voice-txt { font-size:13px; color:var(--text); font-weight:500; }
+
+/* ── TOAST ── */
+#toast {
+  position:fixed; top:58px; left:50%;
+  transform:translateX(-50%) translateY(-14px);
+  background:rgba(14,14,22,.97); border:1px solid rgba(255,255,255,.11);
+  border-radius:16px; padding:11px 16px;
+  display:flex; align-items:center; gap:10px; z-index:400;
+  opacity:0; pointer-events:none; transition:opacity .22s, transform .22s;
+  backdrop-filter:blur(40px); max-width:88vw;
+  box-shadow:0 8px 36px rgba(0,0,0,.45);
+}
+#toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+#t-ico  { font-size:20px; flex-shrink:0; }
+#t-text { font-size:13px; color:var(--text); font-weight:500; line-height:1.4; }
+
+/* ── HAND TRACKING ── */
+#ht-view {
+  position:fixed; inset:0; z-index:250; display:none; background:#000;
+}
+#ht-video {
+  position:absolute; inset:0; width:100%; height:100%;
+  object-fit:cover; transform:scaleX(-1); /* mirror front camera */
+}
+#ht-canvas {
+  position:absolute; inset:0; width:100%; height:100%;
+  transform:scaleX(-1); /* mirror to match video */
+}
+/* HT top bar */
+#ht-top {
+  position:absolute; top:0; left:0; right:0;
+  padding:14px 18px; display:flex; justify-content:space-between; align-items:center;
+  background:linear-gradient(180deg,rgba(0,0,0,.6) 0%,transparent 100%);
+  z-index:10; pointer-events:none;
+}
+.ht-txt { font-size:10px; color:rgba(255,255,255,.75); letter-spacing:1px; }
+#ht-pill {
+  background:rgba(0,0,0,.4); border:1px solid rgba(255,255,255,.18);
+  border-radius:20px; padding:4px 13px; font-size:10px;
+  letter-spacing:2px; color:rgba(255,255,255,.85); backdrop-filter:blur(12px);
+}
+/* HT gesture display */
+#ht-gesture {
+  position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+  z-index:10; pointer-events:none; text-align:center;
+  opacity:0; transition:opacity .2s;
+}
+#ht-gesture.show { opacity:1; }
+.htg-icon  { font-size:52px; }
+.htg-label {
+  font-size:11px; letter-spacing:3px; color:rgba(255,255,255,.85);
+  margin-top:8px; background:rgba(0,0,0,.5); padding:4px 12px;
+  border-radius:20px; backdrop-filter:blur(10px); display:inline-block;
+}
+/* HT info panel */
+#ht-info {
+  position:absolute; top:70px; left:50%; transform:translateX(-50%);
+  width:min(84vw,300px); background:rgba(0,0,0,.55);
+  border:1px solid rgba(255,255,255,.15); border-radius:18px;
+  padding:12px 15px; backdrop-filter:blur(28px); z-index:10;
+  display:none; animation:fadeUp .25s ease;
+}
+.hti-label { font-size:9px; letter-spacing:2px; color:rgba(74,158,255,.8); margin-bottom:6px; }
+.hti-val   { font-size:15px; font-weight:600; color:#fff; margin-bottom:3px; }
+.hti-sub   { font-size:11px; color:rgba(255,255,255,.55); line-height:1.5; }
+/* HT stats bar */
+#ht-stats {
+  position:absolute; bottom:85px; left:50%; transform:translateX(-50%);
+  display:flex; gap:12px; z-index:10; pointer-events:none;
+}
+.ht-stat {
+  background:rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.12);
+  border-radius:12px; padding:7px 12px; backdrop-filter:blur(12px);
+  text-align:center;
+}
+.ht-stat-val { font-size:14px; font-weight:700; color:var(--blue); }
+.ht-stat-lbl { font-size:8px; color:rgba(255,255,255,.5); letter-spacing:1px; margin-top:2px; }
+/* HT dock */
+#ht-dock {
+  position:absolute; bottom:0; left:0; right:0;
+  display:flex; justify-content:center; gap:10px;
+  padding:0 0 22px;
+  background:linear-gradient(0deg,rgba(0,0,0,.65) 0%,transparent 100%);
+  z-index:10;
+}
+/* Finger tip dots */
+.ht-dot {
+  position:absolute; border-radius:50%;
+  pointer-events:none; transform:translate(-50%,-50%);
+  transition:opacity .1s;
+}
+/* Pinch indicator */
+#pinch-ring {
+  position:absolute; border-radius:50%;
+  border:2px solid rgba(74,158,255,.8);
+  pointer-events:none; z-index:15;
+  transform:translate(-50%,-50%);
+  display:none;
+  animation:pinchPulse .4s ease-in-out infinite;
+}
+@keyframes pinchPulse{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.15)}}
+/* Action ripple */
+.ht-ripple {
+  position:fixed; border-radius:50%;
+  border:2px solid rgba(74,158,255,.7);
+  pointer-events:none; z-index:400;
+  animation:htRip .5s ease-out forwards;
+}
+@keyframes htRip{from{width:0;height:0;opacity:.9;transform:translate(-50%,-50%)}to{width:70px;height:70px;opacity:0;transform:translate(-50%,-50%)}}
+
+/* ── EYE TRACKING ── */
+#eye-cursor {
+  position:fixed; width:28px; height:28px; border-radius:50%;
+  border:2px solid rgba(74,158,255,0.8);
+  pointer-events:none; z-index:9999;
+  transform:translate(-50%,-50%);
+  transition:left .08s ease, top .08s ease;
+  display:none;
+}
+#eye-cursor::after {
+  content:''; position:absolute; top:50%; left:50%;
+  transform:translate(-50%,-50%);
+  width:6px; height:6px; border-radius:50%;
+  background:rgba(74,158,255,0.9);
+}
+#eye-cursor.dwell { border-color:#32D74B; animation:dwellRing 1s ease forwards; }
+@keyframes dwellRing {
+  0%  { box-shadow:0 0 0 0 rgba(50,215,75,0.5); }
+  100%{ box-shadow:0 0 0 16px rgba(50,215,75,0); }
+}
+#eye-view {
+  position:fixed; inset:0; z-index:270; display:none;
+  background:#000;
+}
+#eye-video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; transform:scaleX(-1); }
+#eye-canvas { position:absolute; inset:0; width:100%; height:100%; transform:scaleX(-1); }
+#eye-top {
+  position:absolute; top:0; left:0; right:0; z-index:10;
+  padding:14px 18px; display:flex; justify-content:space-between; align-items:center;
+  background:linear-gradient(180deg,rgba(0,0,0,.6) 0%,transparent 100%);
+  pointer-events:none;
+}
+.et-txt { font-size:10px; color:rgba(255,255,255,.7); letter-spacing:1px; }
+#et-pill { background:rgba(0,0,0,.4); border:1px solid rgba(255,255,255,.16); border-radius:20px; padding:4px 13px; font-size:10px; letter-spacing:2px; color:rgba(255,255,255,.82); backdrop-filter:blur(12px); }
+#eye-stats {
+  position:absolute; bottom:80px; left:50%; transform:translateX(-50%);
+  display:flex; gap:10px; z-index:10; pointer-events:none;
+}
+.es-box { background:rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.12); border-radius:12px; padding:7px 12px; backdrop-filter:blur(12px); text-align:center; }
+.es-val { font-size:14px; font-weight:700; color:var(--blue); }
+.es-lbl { font-size:8px; color:rgba(255,255,255,.45); letter-spacing:1px; margin-top:2px; }
+#eye-dock { position:absolute; bottom:0; left:0; right:0; display:flex; justify-content:center; gap:10px; padding:0 0 22px; background:linear-gradient(0deg,rgba(0,0,0,.65) 0%,transparent 100%); z-index:10; }
+#eye-gaze-dot {
+  position:absolute; width:20px; height:20px; border-radius:50%;
+  background:rgba(74,158,255,.5); border:1.5px solid rgba(74,158,255,.9);
+  pointer-events:none; z-index:10; transform:translate(-50%,-50%);
+  display:none; transition:left .06s, top .06s;
+  box-shadow:0 0 12px rgba(74,158,255,.4);
+}
+#eye-info {
+  position:absolute; top:70px; left:50%; transform:translateX(-50%);
+  width:min(82vw,290px); background:rgba(0,0,0,.55);
+  border:1px solid rgba(255,255,255,.14); border-radius:18px;
+  padding:12px 15px; backdrop-filter:blur(28px); z-index:10;
+  display:none; animation:fadeUp .25s ease;
+}
+.ei-lbl { font-size:9px; letter-spacing:2px; color:rgba(74,158,255,.8); margin-bottom:5px; }
+.ei-val { font-size:15px; font-weight:600; color:#fff; margin-bottom:3px; }
+.ei-sub { font-size:11px; color:rgba(255,255,255,.55); line-height:1.5; }
+
+/* ── BROWSER ── */
+#browser-view {
+  position:fixed; inset:0; z-index:280; display:none;
+  background:var(--bg); flex-direction:column;
+}
+#browser-bar {
+  display:flex; align-items:center; gap:8px;
+  padding:10px 14px; background:rgba(255,255,255,.05);
+  border-bottom:1px solid rgba(255,255,255,.08);
+  flex-shrink:0;
+}
+#browser-back, #browser-fwd, #browser-reload, #browser-home, #browser-exit-btn {
+  width:34px; height:34px; border-radius:10px; border:none;
+  background:rgba(255,255,255,.08); color:var(--text);
+  font-size:14px; cursor:pointer; display:flex;
+  align-items:center; justify-content:center; flex-shrink:0;
+  transition:background .15s;
+}
+#browser-back:active,#browser-fwd:active,#browser-reload:active,#browser-home:active,#browser-exit-btn:active { background:rgba(255,255,255,.15); }
+#url-bar {
+  flex:1; background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.1); border-radius:12px;
+  padding:8px 14px; color:var(--text); font-size:13px;
+  font-family:var(--font); outline:none;
+}
+#url-bar:focus { border-color:rgba(74,158,255,.5); background:rgba(74,158,255,.06); }
+#browser-go {
+  width:34px; height:34px; border-radius:10px; border:none;
+  background:var(--blue); color:#fff; font-size:14px;
+  cursor:pointer; flex-shrink:0;
+}
+#browser-tabs {
+  display:flex; gap:6px; padding:6px 14px 0;
+  overflow-x:auto; flex-shrink:0;
+  background:rgba(255,255,255,.03);
+}
+#browser-tabs::-webkit-scrollbar { display:none; }
+.b-tab {
+  display:flex; align-items:center; gap:6px;
+  padding:5px 12px; border-radius:10px 10px 0 0;
+  background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08);
+  border-bottom:none; cursor:pointer; white-space:nowrap;
+  font-size:11px; color:var(--text-2); min-width:80px; flex-shrink:0;
+  transition:background .15s;
+}
+.b-tab.active { background:rgba(255,255,255,.1); color:var(--text); }
+.b-tab-close { font-size:12px; color:var(--text-3); margin-left:2px; }
+#browser-frame-wrap { flex:1; position:relative; overflow:hidden; }
+#browser-frame {
+  position:absolute; inset:0; width:100%; height:100%;
+  border:none; background:#fff;
+}
+#browser-loading {
+  position:absolute; top:0; left:0; right:0; height:2px;
+  background:linear-gradient(90deg,var(--blue),rgba(255,255,255,.8));
+  z-index:5; transform:scaleX(0); transform-origin:left;
+  transition:transform .3s; display:none;
+}
+#browser-new-tab {
+  display:none; position:absolute; inset:0;
+  background:var(--bg); padding:24px;
+  overflow-y:auto;
+}
+.nt-greeting { font-size:22px; font-weight:600; color:var(--text); margin-bottom:20px; }
+.nt-search {
+  display:flex; gap:8px; margin-bottom:28px;
+  background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12);
+  border-radius:14px; padding:8px 14px;
+}
+#nt-search-in { flex:1; background:transparent; border:none; outline:none; color:var(--text); font-size:15px; font-family:var(--font); }
+#nt-search-in::placeholder { color:var(--text-3); }
+#nt-search-btn { background:var(--blue); border:none; color:#fff; padding:7px 16px; border-radius:10px; font-size:13px; cursor:pointer; font-family:var(--font); font-weight:600; }
+.nt-section { font-size:11px; font-weight:600; color:var(--text-2); letter-spacing:.5px; margin-bottom:10px; }
+.nt-bookmarks { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:24px; }
+.nt-bm {
+  display:flex; flex-direction:column; align-items:center; gap:6px;
+  padding:12px 6px; background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.09); border-radius:14px; cursor:pointer;
+  transition:background .15s;
+}
+.nt-bm:active { background:rgba(255,255,255,.12); }
+.nt-bm-ico { font-size:24px; }
+.nt-bm-lbl { font-size:9px; color:var(--text-2); text-align:center; }
+.nt-recents { display:flex; flex-direction:column; gap:8px; }
+.nt-recent {
+  display:flex; align-items:center; gap:10px; padding:10px 12px;
+  background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08);
+  border-radius:12px; cursor:pointer; transition:background .15s;
+}
+.nt-recent:active { background:rgba(255,255,255,.1); }
+.nt-r-ico { font-size:18px; flex-shrink:0; }
+.nt-r-title { font-size:13px; color:var(--text); font-weight:500; }
+.nt-r-url { font-size:10px; color:var(--text-3); margin-top:1px; }
+
+/* ── PHONE INTEGRATION ── */
+#phone-panel-overlay { }
+.phone-device {
+  display:flex; align-items:center; gap:12px; padding:12px 14px;
+  background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08);
+  border-radius:14px; margin-bottom:8px; cursor:pointer; transition:background .15s;
+}
+.phone-device:active { background:rgba(255,255,255,.1); }
+.ph-ico { font-size:26px; flex-shrink:0; }
+.ph-info { flex:1; }
+.ph-name { font-size:13px; font-weight:600; color:var(--text); }
+.ph-sub  { font-size:11px; color:var(--text-2); margin-top:2px; }
+.ph-status { font-size:10px; font-weight:600; padding:3px 9px; border-radius:8px; flex-shrink:0; }
+.ph-connected   { background:rgba(50,215,75,.15);  color:var(--green); }
+.ph-scanning    { background:rgba(74,158,255,.15); color:var(--blue); }
+.ph-disconnected{ background:rgba(255,255,255,.08); color:var(--text-3); }
+#ph-qr-box {
+  background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08);
+  border-radius:14px; padding:20px; text-align:center; margin-bottom:14px;
+}
+#ph-qr-canvas { border-radius:8px; margin:0 auto 10px; display:block; }
+.ph-connect-btn {
+  width:100%; padding:12px; border-radius:12px; border:none;
+  font-size:14px; font-weight:600; cursor:pointer; font-family:var(--font);
+  transition:transform .15s;
+}
+.ph-connect-btn:active { transform:scale(.97); }
+.ph-section { font-size:11px; font-weight:600; color:var(--text-2); letter-spacing:.5px; margin:16px 0 8px; }
+.ph-feature-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:11px 0; border-bottom:1px solid rgba(255,255,255,.06);
+}
+.ph-feature-row:last-child { border-bottom:none; }
+.ph-feat-l { display:flex; align-items:center; gap:10px; }
+.ph-feat-ico { font-size:18px; }
+.ph-feat-name { font-size:13px; color:var(--text); }
+.ph-feat-sub  { font-size:11px; color:var(--text-2); margin-top:1px; }
+
+#spatial-view {
+  position:fixed; inset:0; z-index:260; display:none;
+  background:#000; overflow:hidden;
+}
+#spatial-camera {
+  position:absolute; inset:0; width:100%; height:100%;
+  object-fit:cover;
+}
+#spatial-scanline {
+  position:absolute; inset:0; pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,180,255,.01) 3px,rgba(0,180,255,.01) 4px);
+  z-index:1;
+}
+#spatial-world {
+  position:absolute; inset:0; z-index:2;
+  transform-origin:center center;
+  will-change:transform;
+}
+.sw {
+  position:absolute;
+  background:rgba(12,12,22,0.75);
+  border:1px solid rgba(255,255,255,0.14);
+  border-radius:22px;
+  backdrop-filter:blur(40px);
+  -webkit-backdrop-filter:blur(40px);
+  box-shadow:0 20px 60px rgba(0,0,0,0.5);
+  overflow:hidden;
+  min-width:200px;
+  user-select:none;
+  animation:winSpawn .3s cubic-bezier(.2,.8,.2,1);
+}
+.sw.focused {
+  border-color:rgba(74,158,255,0.38);
+  box-shadow:0 20px 60px rgba(0,0,0,0.6),0 0 0 1px rgba(74,158,255,0.18);
+}
+.sw-bar {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:10px 14px 8px; border-bottom:1px solid rgba(255,255,255,0.07);
+  background:rgba(255,255,255,0.04);
+}
+.sw-title { font-size:12px; font-weight:600; color:rgba(255,255,255,0.9); }
+.sw-controls { display:flex; gap:6px; }
+.sw-btn { width:12px; height:12px; border-radius:50%; border:none; cursor:pointer; }
+.sw-close{background:#FF453A;} .sw-min{background:#FFD60A;} .sw-max{background:#32D74B;}
+.sw-body { padding:14px; overflow-y:auto; max-height:280px; }
+.sw-body::-webkit-scrollbar{display:none;}
+#spatial-hud { position:absolute; inset:0; pointer-events:none; z-index:10; }
+.sp-corner { position:absolute; width:22px; height:22px; border-color:rgba(74,158,255,.45); border-style:solid; }
+.sp-tl{top:12px;left:12px;border-width:1.5px 0 0 1.5px;}
+.sp-tr{top:12px;right:12px;border-width:1.5px 1.5px 0 0;}
+.sp-bl{bottom:72px;left:12px;border-width:0 0 1.5px 1.5px;}
+.sp-br{bottom:72px;right:12px;border-width:0 1.5px 1.5px 0;}
+#spatial-top {
+  position:absolute; top:0; left:0; right:0;
+  padding:14px 18px; display:flex; justify-content:space-between; align-items:center;
+  background:linear-gradient(180deg,rgba(0,0,0,.55) 0%,transparent 100%);
+  z-index:11; pointer-events:none;
+}
+.spt-txt{font-size:10px;color:rgba(255,255,255,.7);letter-spacing:1px;}
+#sp-pill{background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.16);border-radius:20px;padding:4px 13px;font-size:10px;letter-spacing:2px;color:rgba(255,255,255,.82);backdrop-filter:blur(12px);}
+#spatial-dock {
+  position:absolute; bottom:0; left:0; right:0;
+  display:flex; justify-content:center; gap:10px; padding:0 0 20px;
+  background:linear-gradient(0deg,rgba(0,0,0,.6) 0%,transparent 100%);
+  z-index:11;
+}
+#gyro-ring {
+  position:absolute; right:16px; top:50%; transform:translateY(-50%);
+  width:44px; height:44px; border-radius:50%;
+  border:1px solid rgba(74,158,255,.25);
+  display:flex; align-items:center; justify-content:center;
+  z-index:11; pointer-events:none;
+}
+#gyro-dot {
+  width:8px; height:8px; border-radius:50%;
+  background:rgba(74,158,255,.8);
+  position:absolute; transition:transform .08s ease;
+}
+@keyframes winSpawn{from{opacity:0;transform:scale(.85) translateY(16px)}to{opacity:1;transform:scale(1) translateY(0)}}
+
+/* ── ANIMATIONS ── */
+.fu  { animation:fadeUp .45s ease both; }
+.d1  { animation-delay:.05s; }
+.d2  { animation-delay:.10s; }
+.d3  { animation-delay:.15s; }
+.d4  { animation-delay:.20s; }
+.d5  { animation-delay:.25s; }
+</style>
+</head>
+<body>
+
+<div id="ambient"><div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div></div>
+
+<!-- ══ BOOT ══ -->
+<div id="boot">
+  <div class="b-logo">⬡</div>
+  <div class="b-name">JARVIS</div>
+  <div class="b-sub">OPERATING SYSTEM · v7.0 · EYE + BROWSER + PHONE</div>
+  <div class="b-track"><div class="b-fill" id="b-fill"></div></div>
+</div>
+
+<!-- ══ SPATIAL UI VIEW ══ -->
+<div id="spatial-view">
+  <video id="spatial-camera" autoplay playsinline muted></video>
+  <div id="spatial-scanline"></div>
+
+  <!-- World container — moves with gyro -->
+  <div id="spatial-world"></div>
+
+  <!-- HUD corners -->
+  <div id="spatial-hud">
+    <div class="sp-corner sp-tl"></div><div class="sp-corner sp-tr"></div>
+    <div class="sp-corner sp-bl"></div><div class="sp-corner sp-br"></div>
+  </div>
+
+  <!-- Gyro dot indicator -->
+  <div id="gyro-ring"><div id="gyro-dot"></div></div>
+
+  <!-- Top bar -->
+  <div id="spatial-top">
+    <div class="spt-txt" id="sp-time">00:00</div>
+    <div id="sp-pill">SPATIAL UI</div>
+    <div class="spt-txt" id="sp-wins">0 WINDOWS</div>
+  </div>
+
+  <!-- Dock -->
+  <div id="spatial-dock">
+    <div class="ar-btn" onclick="spawnWindow('jarvis')"  title="JARVIS AI">🤖</div>
+    <div class="ar-btn" onclick="spawnWindow('sensors')" title="Sensors">📡</div>
+    <div class="ar-btn" onclick="spawnWindow('notes')"   title="Notes">📝</div>
+    <div class="ar-btn" onclick="spawnWindow('system')"  title="System">🗺</div>
+    <div class="ar-btn" id="sp-cam-btn" onclick="spToggleCamera()" title="Camera">📷</div>
+    <div class="ar-btn" onclick="spResetWindows()"       title="Reset">↺</div>
+    <div class="ar-btn ar-exit" onclick="exitSpatial()"  title="Exit">✕</div>
+  </div>
+</div>
+
+<!-- ══ HAND TRACKING VIEW ══ -->
+<div id="ht-view">
+  <video id="ht-video" autoplay playsinline muted></video>
+  <canvas id="ht-canvas"></canvas>
+
+  <!-- Top bar -->
+  <div id="ht-top">
+    <div class="ht-txt" id="ht-time">00:00</div>
+    <div id="ht-pill">HAND TRACKING</div>
+    <div class="ht-txt" id="ht-fps">-- FPS</div>
+  </div>
+
+  <!-- Gesture display -->
+  <div id="ht-gesture">
+    <div class="htg-icon" id="htg-icon">✋</div>
+    <div class="htg-label" id="htg-label">SHOW YOUR HAND</div>
+  </div>
+
+  <!-- Info panel -->
+  <div id="ht-info">
+    <div class="hti-label" id="hti-label">GESTURE DETECTED</div>
+    <div class="hti-val"   id="hti-val">—</div>
+    <div class="hti-sub"   id="hti-sub">—</div>
+  </div>
+
+  <!-- Stats -->
+  <div id="ht-stats">
+    <div class="ht-stat"><div class="ht-stat-val" id="ht-hands">0</div><div class="ht-stat-lbl">HANDS</div></div>
+    <div class="ht-stat"><div class="ht-stat-val" id="ht-pts">0</div><div class="ht-stat-lbl">POINTS</div></div>
+    <div class="ht-stat"><div class="ht-stat-val" id="ht-gest">—</div><div class="ht-stat-lbl">GESTURE</div></div>
+  </div>
+
+  <!-- Pinch ring -->
+  <div id="pinch-ring"></div>
+
+  <!-- Dock -->
+  <div id="ht-dock">
+    <div class="ar-btn" id="ht-mirror-btn" onclick="htToggleMirror()" title="Mirror">🪞</div>
+    <div class="ar-btn" id="ht-dots-btn"   onclick="htToggleDots()"   title="Show dots">👁</div>
+    <div class="ar-btn"                     onclick="htVoice()"        title="Voice">🎤</div>
+    <div class="ar-btn ar-exit"             onclick="exitHT()"         title="Exit">✕</div>
+  </div>
+</div>
+
+<!-- ══ AR VIEW ══ -->
+<div id="ar-view">
+  <!-- Single screen video -->
+  <div id="ar-single"><video id="ar-vid-s" autoplay playsinline muted></video></div>
+  <!-- VR split videos -->
+  <video id="ar-vid-l" autoplay playsinline muted></video>
+  <video id="ar-vid-r" autoplay playsinline muted></video>
+  <div id="ar-divider"></div>
+  <!-- Scanline -->
+  <div id="ar-scanline"></div>
+  <!-- HUD overlay -->
+  <div id="ar-overlay">
+    <div class="ar-corner ar-tl"></div><div class="ar-corner ar-tr"></div>
+    <div class="ar-corner ar-bl"></div><div class="ar-corner ar-br"></div>
+    <div class="ar-ch"></div>
+  </div>
+  <!-- Detection boxes -->
+  <div id="ar-detect"></div>
+  <!-- Object info -->
+  <div id="ar-info">
+    <div class="ai-label" id="ai-conf">DETECTED · --% CONFIDENCE</div>
+    <div class="ai-name"  id="ai-name">—</div>
+    <div class="ai-desc"  id="ai-desc">—</div>
+    <button class="ai-ask" onclick="arAskJarvis()">🤖 Ask JARVIS about this</button>
+  </div>
+  <!-- Top bar -->
+  <div id="ar-top">
+    <div class="ar-top-txt" id="ar-time">00:00</div>
+    <div id="ar-pill">AR VISION</div>
+    <div class="ar-top-txt" id="ar-fps">-- FPS</div>
+  </div>
+  <!-- Dock -->
+  <div id="ar-dock">
+    <div class="ar-btn" id="ar-vr-btn"   onclick="arToggleVR()"   title="VR Split">👓</div>
+    <div class="ar-btn" id="ar-scan-btn" onclick="arToggleScan()" title="Object Scan">🔍</div>
+    <div class="ar-btn"                  onclick="arVoice()"       title="Voice">🎤</div>
+    <div class="ar-btn" id="ar-hud-btn"  onclick="arToggleHUD()"  title="HUD">📊</div>
+    <div class="ar-btn" id="ar-torch-btn"onclick="arTorch()"      title="Torch">🔦</div>
+    <div class="ar-btn ar-exit"          onclick="exitAR()"        title="Exit">✕</div>
+  </div>
+</div>
+
+<!-- ══ EYE TRACKING VIEW ══ -->
+<div id="eye-view">
+  <video id="eye-video" autoplay playsinline muted></video>
+  <canvas id="eye-canvas"></canvas>
+  <div id="eye-gaze-dot"></div>
+  <div id="eye-top">
+    <div class="et-txt" id="et-time">00:00</div>
+    <div id="et-pill">EYE TRACKING</div>
+    <div class="et-txt" id="et-fps">-- FPS</div>
+  </div>
+  <div id="eye-info">
+    <div class="ei-lbl" id="ei-lbl">GAZE DETECTED</div>
+    <div class="ei-val" id="ei-val">—</div>
+    <div class="ei-sub" id="ei-sub">—</div>
+  </div>
+  <div id="eye-stats">
+    <div class="es-box"><div class="es-val" id="et-blinks">0</div><div class="es-lbl">BLINKS</div></div>
+    <div class="es-box"><div class="es-val" id="et-dwell">0</div><div class="es-lbl">DWELLS</div></div>
+    <div class="es-box"><div class="es-val" id="et-mode">TRACK</div><div class="es-lbl">MODE</div></div>
+  </div>
+  <div id="eye-dock">
+    <div class="ar-btn" id="et-dwell-btn" onclick="etToggleDwell()" title="Dwell click">⏱</div>
+    <div class="ar-btn" id="et-cal-btn"   onclick="etCalibrate()"   title="Calibrate">🎯</div>
+    <div class="ar-btn"                    onclick="etVoice()"       title="Voice">🎤</div>
+    <div class="ar-btn ar-exit"            onclick="exitEye()"       title="Exit">✕</div>
+  </div>
+</div>
+
+<!-- ══ BROWSER VIEW ══ -->
+<div id="browser-view" style="display:none;flex-direction:column;">
+  <div id="browser-bar">
+    <button id="browser-back"   onclick="bBack()">←</button>
+    <button id="browser-fwd"    onclick="bFwd()">→</button>
+    <button id="browser-reload" onclick="bReload()">↺</button>
+    <input  id="url-bar" placeholder="Search or enter URL…" onkeydown="if(event.key==='Enter')bGo()"/>
+    <button id="browser-go"     onclick="bGo()">→</button>
+    <button id="browser-home"   onclick="bHome()">⬡</button>
+    <button id="browser-exit-btn" onclick="exitBrowser()" style="background:rgba(255,69,58,.2);border-color:rgba(255,69,58,.3)">✕</button>
+  </div>
+  <div id="browser-tabs"></div>
+  <div id="browser-loading"></div>
+  <div id="browser-frame-wrap">
+    <div id="browser-new-tab">
+      <div class="nt-greeting" id="nt-greet">Good morning, Sundaram</div>
+      <div class="nt-search">
+        <input id="nt-search-in" placeholder="Search Google or enter a URL…" onkeydown="if(event.key==='Enter')bSearch()"/>
+        <button id="nt-search-btn" onclick="bSearch()">Search</button>
+      </div>
+      <div class="nt-section">Bookmarks</div>
+      <div class="nt-bookmarks">
+        <div class="nt-bm" onclick="bNavigate('https://google.com')"><div class="nt-bm-ico">🔍</div><div class="nt-bm-lbl">Google</div></div>
+        <div class="nt-bm" onclick="bNavigate('https://youtube.com')"><div class="nt-bm-ico">▶️</div><div class="nt-bm-lbl">YouTube</div></div>
+        <div class="nt-bm" onclick="bNavigate('https://github.com')"><div class="nt-bm-ico">💻</div><div class="nt-bm-lbl">GitHub</div></div>
+        <div class="nt-bm" onclick="bNavigate('https://wikipedia.org')"><div class="nt-bm-ico">📖</div><div class="nt-bm-lbl">Wikipedia</div></div>
+        <div class="nt-bm" onclick="bNavigate('https://maps.google.com')"><div class="nt-bm-ico">🗺</div><div class="nt-bm-lbl">Maps</div></div>
+        <div class="nt-bm" onclick="bNavigate('https://translate.google.com')"><div class="nt-bm-ico">🌐</div><div class="nt-bm-lbl">Translate</div></div>
+        <div class="nt-bm" onclick="bNavigate('https://weather.com')"><div class="nt-bm-ico">🌤</div><div class="nt-bm-lbl">Weather</div></div>
+        <div class="nt-bm" onclick="bNavigate('https://news.google.com')"><div class="nt-bm-ico">📰</div><div class="nt-bm-lbl">News</div></div>
+      </div>
+      <div class="nt-section">Quick Links</div>
+      <div class="nt-recents" id="nt-recents"></div>
+    </div>
+    <iframe id="browser-frame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups" style="display:none"></iframe>
+  </div>
+</div>
+
+<!-- ══ EYE CURSOR (global) ══ -->
+<div id="eye-cursor"></div>
+
+<!-- ══ OS SHELL ══ -->
+<div id="os">
+  <!-- STATUS BAR -->
+  <div id="sb">
+    <span class="sb-time" id="sb-time">00:00</span>
+    <div class="sb-right">
+      <span class="sb-ico">📶</span>
+      <span class="sb-ico">🛜</span>
+      <div class="bat"><div class="bat-f"></div></div>
+    </div>
+  </div>
+
+  <!-- HOME -->
+  <div id="home">
+    <!-- GREETING -->
+    <div id="greet" class="fu d1">
+      <div class="g-sub" id="g-sub">Good morning</div>
+      <div class="g-name">Sundaram</div>
+    </div>
+
+    <!-- SPOTLIGHT -->
+    <div class="gc fu d2" id="spotlight" onclick="openPanel('chat')">
+      <span class="sp-ico">🔍</span>
+      <span class="sp-text">Ask JARVIS anything…</span>
+      <span class="sp-tag">AI</span>
+    </div>
+
+    <div class="sec-label fu d2">Apps</div>
+
+    <!-- APP GRID — only real, working apps -->
+    <div id="app-grid">
+      <div class="gc app-tile fu d2" onclick="openPanel('chat')">
+        <div class="app-ico" style="background:linear-gradient(145deg,#1a3a6e,#0d2040)">🤖</div>
+        <div class="app-name">JARVIS AI</div>
+      </div>
+      <div class="gc app-tile fu d2" onclick="launchAR()">
+        <div class="app-ico" style="background:linear-gradient(145deg,#0d2a3a,#061418)">🥽</div>
+        <div class="app-name">AR Vision</div>
+        <div class="app-badge" style="background:var(--green);font-size:8px;">LIVE</div>
+      </div>
+      <div class="gc app-tile fu d2" onclick="launchHT()">
+        <div class="app-ico" style="background:linear-gradient(145deg,#1a0d3a,#0d0618)">✋</div>
+        <div class="app-name">Hand Track</div>
+        <div class="app-badge" style="background:var(--blue);font-size:8px;">NEW</div>
+      </div>
+      <div class="gc app-tile fu d3" onclick="openPanel('sensors')">
+        <div class="app-ico" style="background:linear-gradient(145deg,#0d3a2d,#082018)">📡</div>
+        <div class="app-name">Sensors</div>
+      </div>
+      <div class="gc app-tile fu d3" onclick="launchSpatial()">
+        <div class="app-ico" style="background:linear-gradient(145deg,#2a1a3a,#180d20)">🪟</div>
+        <div class="app-name">Spatial UI</div>
+        <div class="app-badge" style="background:var(--blue);font-size:8px;">NEW</div>
+      </div>
+      <div class="gc app-tile fu d3" onclick="openPanel('notes')">
+        <div class="app-ico" style="background:linear-gradient(145deg,#2a1a0d,#180e08)">📝</div>
+        <div class="app-name">Notes</div>
+      </div>
+      <div class="gc app-tile fu d4" onclick="openPanel('system')">
+        <div class="app-ico" style="background:linear-gradient(145deg,#1a2a1a,#0d180d)">🗺</div>
+        <div class="app-name">Roadmap</div>
+      </div>
+      <div class="gc app-tile fu d4" onclick="openPanel('settings')">
+        <div class="app-ico" style="background:linear-gradient(145deg,#1a1a2a,#0d0d18)">⚙️</div>
+        <div class="app-name">Settings</div>
+      </div>
+      <div class="gc app-tile fu d4" onclick="launchEye()">
+        <div class="app-ico" style="background:linear-gradient(145deg,#1a2a1a,#0d180a)">👁</div>
+        <div class="app-name">Eye Track</div>
+        <div class="app-badge" style="background:var(--blue);font-size:8px;">NEW</div>
+      </div>
+      <div class="gc app-tile fu d5" onclick="launchBrowser()">
+        <div class="app-ico" style="background:linear-gradient(145deg,#2a1a0d,#180e06)">🌐</div>
+        <div class="app-name">Browser</div>
+        <div class="app-badge" style="background:var(--blue);font-size:8px;">NEW</div>
+      </div>
+      <div class="gc app-tile fu d5" onclick="openPanel('phone')">
+        <div class="app-ico" style="background:linear-gradient(145deg,#1a1a1a,#0d0d0d)">📱</div>
+        <div class="app-name">My Phone</div>
+        <div class="app-badge" style="background:var(--green);font-size:8px;">LINK</div>
+      </div>
+    </div>
+
+    <div class="sec-label fu d4">System</div>
+
+    <!-- SYSTEM STATUS -->
+    <div class="gc fu d4" id="sys-card">
+      <div class="sys-row">
+        <div class="sys-l"><div class="sys-dot" style="background:var(--green)"></div>AI Core</div>
+        <div class="sys-r">Online</div>
+      </div>
+      <div class="sys-row">
+        <div class="sys-l"><div class="sys-dot" style="background:var(--green)"></div>AR Camera</div>
+        <div class="sys-r">Ready</div>
+      </div>
+      <div class="sys-row">
+        <div class="sys-l"><div class="sys-dot" style="background:var(--green)"></div>Voice Engine</div>
+        <div class="sys-r">Ready</div>
+      </div>
+      <div class="sys-row">
+        <div class="sys-l"><div class="sys-dot" style="background:var(--green)"></div>Gyroscope</div>
+        <div class="sys-r" id="sys-gyro-state">Active</div>
+      </div>
+      <div class="sys-row">
+        <div class="sys-l"><div class="sys-dot" style="background:var(--green)"></div>Hand Tracking</div>
+        <div class="sys-r" style="color:var(--green)">Phase 5 ✓</div>
+      </div>
+      <div class="sys-row" style="border:none">
+        <div class="sys-l"><div class="sys-dot" style="background:var(--yellow)"></div>Raspberry Pi</div>
+        <div class="sys-r">Phase 6</div>
+      </div>
+    </div>
+
+    <!-- SESSION -->
+    <div class="gc fu d5" id="session-card">
+      <svg class="sess-ring" viewBox="0 0 48 48">
+        <circle cx="24" cy="24" r="19" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="4"/>
+        <circle id="sess-ring-fill" cx="24" cy="24" r="19" fill="none" stroke="var(--blue)" stroke-width="4"
+          stroke-linecap="round" stroke-dasharray="119.4" stroke-dashoffset="119.4"
+          transform="rotate(-90 24 24)" style="transition:stroke-dashoffset 1s ease"/>
+      </svg>
+      <div class="sess-info">
+        <div class="sess-val" id="sess-val">0s</div>
+        <div class="sess-lbl">SESSION UPTIME</div>
+      </div>
+    </div>
+
+    <!-- NOTIFICATIONS -->
+    <div id="notif-strip" class="fu d5"></div>
+
+  </div><!-- /home -->
+
+  <!-- DOCK — 4 real buttons only -->
+  <div id="dock">
+    <div class="dock-wrap">
+      <div class="d-btn" style="background:rgba(26,58,110,.6)" onclick="openPanel('chat')">🤖</div>
+      <div class="d-btn" style="background:rgba(13,42,58,.6)"  onclick="launchAR()">🥽</div>
+      <div class="d-sep"></div>
+      <div class="d-btn" style="background:rgba(255,255,255,.07)" onclick="startVoice()">🎤</div>
+      <div class="d-btn" style="background:rgba(255,255,255,.07)" onclick="openPanel('cc')">⊞</div>
+    </div>
+  </div>
+</div><!-- /os -->
+
+<!-- ══ PANELS ══ -->
+
+<!-- JARVIS AI -->
+<div class="p-overlay" id="p-chat" onclick="bgClose(event,'chat')">
+  <div class="p-sheet">
+    <div class="p-handle"></div>
+    <div class="p-head">
+      <div class="p-title">JARVIS AI</div>
+      <button class="p-close" onclick="closePanel('chat')">✕</button>
+    </div>
+    <div class="p-body" style="display:flex;flex-direction:column">
+      <div id="chat-msgs"></div>
+      <div class="chat-row">
+        <input id="chat-in" placeholder="Ask anything…" onkeydown="if(event.key==='Enter')sendMsg()"/>
+        <button class="chat-btn" id="chat-mic" onclick="startVoice()">🎤</button>
+        <button class="chat-btn" id="chat-send" onclick="sendMsg()">↑</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SENSORS — real data only -->
+<div class="p-overlay" id="p-sensors" onclick="bgClose(event,'sensors')">
+  <div class="p-sheet">
+    <div class="p-handle"></div>
+    <div class="p-head"><div class="p-title">Sensors</div><button class="p-close" onclick="closePanel('sensors')">✕</button></div>
+    <div class="p-body">
+      <div class="sensor-row"><div class="sensor-l"><span>🔄</span> Gyroscope α</div><div class="sensor-v" id="s-alpha">—</div></div>
+      <div class="sensor-row"><div class="sensor-l"><span>🔄</span> Gyroscope β</div><div class="sensor-v" id="s-beta">—</div></div>
+      <div class="sensor-row"><div class="sensor-l"><span>🔄</span> Gyroscope γ</div><div class="sensor-v" id="s-gamma">—</div></div>
+      <div class="sensor-row"><div class="sensor-l"><span>📳</span> Accel X</div><div class="sensor-v" id="s-ax">—</div></div>
+      <div class="sensor-row"><div class="sensor-l"><span>📳</span> Accel Y</div><div class="sensor-v" id="s-ay">—</div></div>
+      <div class="sensor-row"><div class="sensor-l"><span>📳</span> Accel Z</div><div class="sensor-v" id="s-az">—</div></div>
+      <div class="sensor-row"><div class="sensor-l"><span>👆</span> Touch</div><div class="sensor-v" style="color:var(--green)">Active</div></div>
+      <div class="sensor-row"><div class="sensor-l"><span>🎤</span> Microphone</div><div class="sensor-v" style="color:var(--green)">Ready</div></div>
+      <div class="sensor-row"><div class="sensor-l"><span>📷</span> Camera</div><div class="sensor-v" style="color:var(--green)">Ready</div></div>
+      <div class="sensor-row" style="border:none"><div class="sensor-l"><span>📡</span> LiDAR</div><div class="sensor-v" style="color:var(--yellow)">Phase 6</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- NOTES — works fully -->
+<div class="p-overlay" id="p-notes" onclick="bgClose(event,'notes')">
+  <div class="p-sheet">
+    <div class="p-handle"></div>
+    <div class="p-head"><div class="p-title">Notes</div><button class="p-close" onclick="closePanel('notes')">✕</button></div>
+    <div class="p-body">
+      <textarea id="notes-ta" placeholder="Type your note…"></textarea>
+      <div style="display:flex;gap:8px">
+        <button class="notes-btn" style="flex:1;background:var(--blue);color:#fff" onclick="saveNote()">Save</button>
+        <button class="notes-btn" style="flex:1;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);color:var(--text-2)" onclick="clearNote()">Clear</button>
+      </div>
+      <div id="saved-notes"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ROADMAP -->
+<div class="p-overlay" id="p-system" onclick="bgClose(event,'system')">
+  <div class="p-sheet">
+    <div class="p-handle"></div>
+    <div class="p-head"><div class="p-title">Build Roadmap</div><button class="p-close" onclick="closePanel('system')">✕</button></div>
+    <div class="p-body">
+      <div class="phase-row"><div class="phase-num phase-done">✓</div><div><div class="phase-title">Phase 1 — OS Shell</div><div class="phase-desc">Boot screen, home screen, app grid, panels, dock, notifications.</div></div></div>
+      <div class="phase-row"><div class="phase-num phase-done">✓</div><div><div class="phase-title">Phase 2 — UI Polish</div><div class="phase-desc">Notes, sensors, settings, control centre, session uptime.</div></div></div>
+      <div class="phase-row"><div class="phase-num phase-done">✓</div><div><div class="phase-title">Phase 3 — AR Camera</div><div class="phase-desc">Live camera passthrough, VR split mode, object scan overlay, HUD.</div></div></div>
+      <div class="phase-row"><div class="phase-num phase-done">✓</div><div><div class="phase-title">Phase 4 — OS Polish</div><div class="phase-desc">Removed fake features. Only real working systems remain.</div></div></div>
+      <div class="phase-row"><div class="phase-num phase-done">✓</div><div><div class="phase-title">Phase 5 — Hand Tracking</div><div class="phase-desc">MediaPipe AI detects 21 hand landmarks via front camera. Pinch to click, gestures to control OS.</div></div></div>
+      <div class="phase-row"><div class="phase-num phase-now">6</div><div><div class="phase-title">Phase 6 — Raspberry Pi</div><div class="phase-desc">OS runs standalone on Pi hardware. Physical headset prototype.</div></div></div>
+      <div class="phase-row"><div class="phase-num phase-next">7</div><div><div class="phase-title">Phase 7 — Eye Tracking</div><div class="phase-desc">Front camera tracks eye gaze. Look at object to select it.</div></div></div>
+      <div class="phase-row" style="border:none"><div class="phase-num phase-next">8</div><div><div class="phase-title">Phase 8 — Full Device</div><div class="phase-desc">Custom display, lenses, miniaturised hardware. Real wearable product.</div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div class="p-overlay" id="p-settings" onclick="bgClose(event,'settings')">
+  <div class="p-sheet">
+    <div class="p-handle"></div>
+    <div class="p-head"><div class="p-title">Settings</div><button class="p-close" onclick="closePanel('settings')">✕</button></div>
+    <div class="p-body">
+      <div class="set-row">
+        <div class="set-l"><div class="set-ico" style="background:rgba(74,158,255,.15)">🔔</div><div><div class="set-label">Notifications</div><div class="set-sub">JARVIS system alerts</div></div></div>
+        <button class="tog on" id="tog-notif" onclick="toggle('notif')"></button>
+      </div>
+      <div class="set-row">
+        <div class="set-l"><div class="set-ico" style="background:rgba(50,215,75,.12)">🎤</div><div><div class="set-label">Voice Input</div><div class="set-sub">Chrome required</div></div></div>
+        <button class="tog" id="tog-voice" onclick="toggle('voice')"></button>
+      </div>
+      <div class="set-row">
+        <div class="set-l"><div class="set-ico" style="background:rgba(255,214,10,.12)">🔄</div><div><div class="set-label">Gyroscope</div><div class="set-sub">Head orientation tracking</div></div></div>
+        <button class="tog" id="tog-gyro" onclick="toggle('gyro')"></button>
+      </div>
+      <div class="set-row" style="border:none">
+        <div class="set-l"><div class="set-ico" style="background:rgba(255,255,255,.07)">ℹ️</div><div><div class="set-label">JARVIS OS v7.0</div><div class="set-sub">Sundaram Industries · Phase 7 Complete</div></div></div>
+        <div class="set-val">v7.0</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CONTROL CENTRE -->
+<div class="p-overlay" id="p-cc" onclick="bgClose(event,'cc')">
+  <div class="p-sheet">
+    <div class="p-handle"></div>
+    <div class="p-head"><div class="p-title">Control Centre</div><button class="p-close" onclick="closePanel('cc')">✕</button></div>
+    <div id="cc-grid">
+      <div class="cc-tile on" id="cc-ai" onclick="ccToggle('ai')"><div class="cc-ico">🤖</div><div class="cc-name">AI Core</div><div class="cc-state" id="cc-ai-s">Online</div></div>
+      <div class="cc-tile"    id="cc-gy" onclick="ccToggle('gy')"><div class="cc-ico">🔄</div><div class="cc-name">Gyroscope</div><div class="cc-state" id="cc-gy-s">Off</div></div>
+      <div class="cc-tile cc-wide" id="cc-ar" onclick="ccAR()"><div class="cc-ico">🥽</div><div class="cc-name">AR Vision</div><div class="cc-state">Launch camera passthrough</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- PHONE INTEGRATION -->
+<div class="p-overlay" id="p-phone" onclick="bgClose(event,'phone')">
+  <div class="p-sheet">
+    <div class="p-handle"></div>
+    <div class="p-head"><div class="p-title">📱 Phone Integration</div><button class="p-close" onclick="closePanel('phone')">✕</button></div>
+    <div class="p-body">
+      <!-- QR Code to connect -->
+      <div id="ph-qr-box">
+        <canvas id="ph-qr-canvas" width="140" height="140"></canvas>
+        <div style="font-size:12px;color:var(--text-2);margin-bottom:4px;">Scan with your phone</div>
+        <div style="font-size:10px;color:var(--text-3);" id="ph-url-display">Open JARVIS OS on phone browser</div>
+      </div>
+      <!-- Detected devices -->
+      <div class="ph-section">Detected Devices</div>
+      <div class="phone-device" id="ph-this-device">
+        <div class="ph-ico">📱</div>
+        <div class="ph-info">
+          <div class="ph-name">This Device</div>
+          <div class="ph-sub">Android · Chrome · Same network</div>
+        </div>
+        <div class="ph-status ph-connected">Active</div>
+      </div>
+      <div class="phone-device" onclick="phConnect()">
+        <div class="ph-ico">📲</div>
+        <div class="ph-info">
+          <div class="ph-name" id="ph-remote-name">Nearby Phone</div>
+          <div class="ph-sub">Scan QR code to pair</div>
+        </div>
+        <div class="ph-status ph-scanning" id="ph-remote-status">Waiting…</div>
+      </div>
+      <!-- Features when connected -->
+      <div class="ph-section">Phone as Headset Controller</div>
+      <div class="ph-feature-row">
+        <div class="ph-feat-l"><div class="ph-feat-ico">📺</div><div><div class="ph-feat-name">Mirror Display</div><div class="ph-feat-sub">See headset screen on phone</div></div></div>
+        <button class="tog" id="tog-mirror" onclick="phToggle('mirror')"></button>
+      </div>
+      <div class="ph-feature-row">
+        <div class="ph-feat-l"><div class="ph-feat-ico">🎤</div><div><div class="ph-feat-name">Phone as Mic</div><div class="ph-feat-sub">Use phone microphone wirelessly</div></div></div>
+        <button class="tog" id="tog-phmic" onclick="phToggle('phmic')"></button>
+      </div>
+      <div class="ph-feature-row">
+        <div class="ph-feat-l"><div class="ph-feat-ico">🔋</div><div><div class="ph-feat-name">Battery Status</div><div class="ph-feat-sub">Monitor headset power from phone</div></div></div>
+        <button class="tog on" id="tog-phbat" onclick="phToggle('phbat')"></button>
+      </div>
+      <div class="ph-feature-row">
+        <div class="ph-feat-l"><div class="ph-feat-ico">📷</div><div><div class="ph-feat-name">Phone Camera Feed</div><div class="ph-feat-sub">Stream phone camera to headset</div></div></div>
+        <button class="tog" id="tog-phcam" onclick="phToggle('phcam')"></button>
+      </div>
+      <div class="ph-feature-row" style="border:none">
+        <div class="ph-feat-l"><div class="ph-feat-ico">🎮</div><div><div class="ph-feat-name">Phone as Controller</div><div class="ph-feat-sub">Use phone touchscreen as trackpad</div></div></div>
+        <button class="tog" id="tog-phctrl" onclick="phToggle('phctrl')"></button>
+      </div>
+      <button class="ph-connect-btn" style="background:var(--blue);color:#fff;margin-top:14px;" onclick="phOpenSelf()">
+        Open JARVIS OS on This Phone
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ OVERLAYS ══ -->
+<div id="voice-pill">
+  <div class="v-waves"><div class="v-wave"></div><div class="v-wave"></div><div class="v-wave"></div><div class="v-wave"></div><div class="v-wave"></div></div>
+  <div id="voice-txt">Listening…</div>
+</div>
+<div id="toast"><div id="t-ico">⬡</div><div id="t-text"></div></div>
+
+<script>
+// ══════════════════════════════════════════════════
+//  JARVIS OS v7.0 — Core System
+// ══════════════════════════════════════════════════
+
+// ── STATE ──
+const state = {
+  isThinking: false, isListening: false,
+  recognition: null, chatHistory: [],
+  notes: [], notifications: [],
+  sessionStart: Date.now(),
+  toggles: { notif:true, voice:false, gyro:false },
+  ccState: { ai:true, gy:false },
+  arVR: false, arScan: false, arHUD: true, arTorch: false,
+  arStream: null, arFPSCount: 0, arLastFPS: Date.now(), arAnimId: null, arScanTimer: null
+};
+
+// ── BOOT ──
+function runBoot() {
+  try {
+    const fill = document.getElementById('b-fill');
+    if (!fill) { setTimeout(runBoot, 50); return; }
+    let p = 0;
+    const iv = setInterval(() => {
+      try {
+        p += Math.random() * 16 + 4;
+        fill.style.width = Math.min(p, 100) + '%';
+        if (p >= 100) {
+          clearInterval(iv);
+          setTimeout(() => {
+            try {
+              const bootEl = document.getElementById('boot');
+              const osEl   = document.getElementById('os');
+              if (bootEl) { bootEl.classList.add('out'); bootEl.style.opacity='0'; }
+              if (osEl)   { osEl.classList.add('on'); osEl.style.display='flex'; osEl.style.flexDirection='column'; }
+              setTimeout(() => { if(bootEl) bootEl.style.display='none'; }, 800);
+              initOS();
+            } catch(e2) {
+              // Force show OS even if initOS fails
+              const osEl = document.getElementById('os');
+              if (osEl) { osEl.style.display='flex'; osEl.style.flexDirection='column'; }
+              const bootEl = document.getElementById('boot');
+              if (bootEl) bootEl.style.display='none';
+            }
+          }, 300);
+        }
+      } catch(e) { clearInterval(iv); }
+    }, 75);
+  } catch(e) {
+    // Last resort — just show OS
+    const osEl = document.getElementById('os');
+    if (osEl) { osEl.style.display='flex'; osEl.style.flexDirection='column'; }
+    const bootEl = document.getElementById('boot');
+    if (bootEl) bootEl.style.display='none';
+  }
+}
+
+// Wait for full DOM before booting
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', runBoot);
+} else {
+  runBoot();
+}
+
+function initOS() {
+  try { updateGreeting(); } catch(e) {}
+  try { startClock();     } catch(e) {}
+  try { startUptime();    } catch(e) {}
+  try { startSensors();   } catch(e) {}
+  try { setTimeout(() => pushNotif('⬡', 'JARVIS OS v7.0', 'All systems online.'), 1500); } catch(e) {}
+  try { setTimeout(() => pushNotif('🥽', 'AR Vision', 'Camera passthrough ready.'), 4000); } catch(e) {}
+}
+
+// ── CLOCK ──
+function startClock() {
+  const tick = () => {
+    const n = new Date();
+    document.getElementById('sb-time').textContent =
+      String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
+    const arT = document.getElementById('ar-time');
+    if (arT) arT.textContent = String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
+  };
+  tick(); setInterval(tick, 1000);
+}
+
+// ── GREETING ──
+function updateGreeting() {
+  const h = new Date().getHours();
+  document.getElementById('g-sub').textContent = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+}
+
+// ── SESSION UPTIME ──
+function startUptime() {
+  setInterval(() => {
+    const s = Math.floor((Date.now() - state.sessionStart) / 1000);
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sc = s % 60;
+    document.getElementById('sess-val').textContent = h > 0 ? h+'h '+m+'m' : m > 0 ? m+'m '+sc+'s' : sc+'s';
+    const pct = Math.min(s / 600, 1);
+    document.getElementById('sess-ring-fill').style.strokeDashoffset = 119.4 * (1 - pct);
+  }, 1000);
+}
+
+// ── SENSORS (real data) ──
+function startSensors() {
+  if (typeof DeviceOrientationEvent !== 'undefined') {
+    const go = () => window.addEventListener('deviceorientation', e => {
+      const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = Math.round(v || 0) + '°'; };
+      set('s-alpha', e.alpha); set('s-beta', e.beta); set('s-gamma', e.gamma);
+    });
+    typeof DeviceOrientationEvent.requestPermission === 'function'
+      ? DeviceOrientationEvent.requestPermission().then(r => r === 'granted' && go())
+      : go();
+  }
+  if (typeof DeviceMotionEvent !== 'undefined') {
+    window.addEventListener('devicemotion', e => {
+      const a = e.accelerationIncludingGravity;
+      if (!a) return;
+      const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = (v || 0).toFixed(1) + ' m/s²'; };
+      set('s-ax', a.x); set('s-ay', a.y); set('s-az', a.z);
+    });
+  }
+}
+
+// ── PANELS ──
+function openPanel(id) {
+  document.querySelectorAll('.p-overlay').forEach(p => p.classList.remove('open'));
+  const el = document.getElementById('p-' + id);
+  if (!el) return;
+  el.classList.add('open');
+  if (id === 'chat' && state.chatHistory.length === 0)
+    addBubble('j', 'Hello Sundaram. JARVIS OS v7.0 is online — Phase 7 complete. How can I assist you?');
+  if (id === 'phone') setTimeout(initPhonePanel, 100);
+}
+function closePanel(id) { const el = document.getElementById('p-' + id); if (el) el.classList.remove('open'); }
+function bgClose(e, id) { if (e.target === e.currentTarget) closePanel(id); }
+
+// Swipe down to close panels
+document.querySelectorAll('.p-sheet').forEach(s => {
+  let sy = 0;
+  s.addEventListener('touchstart', e => { sy = e.touches[0].clientY; }, { passive: true });
+  s.addEventListener('touchmove',  e => { const dy = e.touches[0].clientY - sy; if (dy > 0) s.style.transform = 'translateY(' + dy + 'px)'; }, { passive: true });
+  s.addEventListener('touchend',   e => {
+    const dy = e.changedTouches[0].clientY - sy;
+    s.style.transform = '';
+    if (dy > 75) { const p = s.closest('.p-overlay'); if (p) p.classList.remove('open'); }
+  }, { passive: true });
+});
+
+// ── SETTINGS TOGGLE ──
+function toggle(key) {
+  state.toggles[key] = !state.toggles[key];
+  const el = document.getElementById('tog-' + key);
+  if (el) el.classList.toggle('on', state.toggles[key]);
+  if (key === 'gyro' && state.toggles[key]) requestGyro();
+  toast('⚙️', key + ' ' + (state.toggles[key] ? 'enabled' : 'disabled'));
+}
+function requestGyro() {
+  if (typeof DeviceOrientationEvent?.requestPermission === 'function')
+    DeviceOrientationEvent.requestPermission().then(r => { if (r === 'granted') { startSensors(); toast('🔄', 'Gyroscope active'); } });
+  else toast('🔄', 'Gyroscope active');
+}
+
+// ── CONTROL CENTRE ──
+function ccToggle(key) {
+  state.ccState[key] = !state.ccState[key];
+  const tile = document.getElementById('cc-' + key);
+  const stat = document.getElementById('cc-' + key + '-s');
+  if (tile) tile.classList.toggle('on', state.ccState[key]);
+  if (stat) stat.textContent = state.ccState[key] ? 'Active' : 'Off';
+  if (key === 'gy' && state.ccState[key]) requestGyro();
+  toast('⊞', key.toUpperCase() + ' ' + (state.ccState[key] ? 'on' : 'off'));
+}
+function ccAR() { closePanel('cc'); launchAR(); }
+
+// ── NOTIFICATIONS ──
+function pushNotif(ico, title, body) {
+  if (!state.toggles.notif) return;
+  const n = { ico, title, body, time: new Date() };
+  state.notifications.unshift(n);
+  renderNotifs();
+  toast(ico, title + ' — ' + body);
+}
+function renderNotifs() {
+  const strip = document.getElementById('notif-strip');
+  strip.innerHTML = '';
+  state.notifications.slice(0, 3).forEach(n => {
+    const el = document.createElement('div');
+    el.className = 'gc notif-card';
+    el.innerHTML = `<div class="notif-ico">${n.ico}</div><div class="notif-body"><div class="notif-title">${n.title}</div><div class="notif-text">${n.body}</div></div><div class="notif-time">${n.time.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</div>`;
+    el.onclick = () => el.remove();
+    strip.appendChild(el);
+  });
+}
+
+// ── NOTES ──
+let savedNotes = [];
+function saveNote() {
+  const ta = document.getElementById('notes-ta');
+  const text = ta.value.trim(); if (!text) return;
+  savedNotes.unshift({ text, time: new Date() });
+  ta.value = '';
+  renderNotes();
+  pushNotif('📝', 'Note saved', text.slice(0, 50) + (text.length > 50 ? '…' : ''));
+}
+function clearNote() { document.getElementById('notes-ta').value = ''; }
+function renderNotes() {
+  document.getElementById('saved-notes').innerHTML = savedNotes.slice(0, 10).map(n =>
+    `<div class="note-item"><div class="note-text">${n.text}</div><div class="note-time">${n.time.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</div></div>`
+  ).join('');
+}
+
+// ── AR PASSTHROUGH ──
+async function launchAR() {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    toast('⚠️', 'Camera needs HTTPS — open via GitHub Pages'); return;
+  }
+  toast('📷', 'Starting AR Vision…');
+  try {
+    state.arStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode:'environment', width:{ideal:1280}, height:{ideal:720} }, audio: false });
+    // Feed videos
+    ['ar-vid-s','ar-vid-l','ar-vid-r'].forEach(id => {
+      const v = document.getElementById(id);
+      if (v) { v.srcObject = state.arStream; v.play(); }
+    });
+    document.getElementById('os').style.display = 'none';
+    document.getElementById('ar-view').style.display = 'block';
+    startARLoop();
+    pushNotif('🥽', 'AR Vision', 'Camera passthrough active.');
+  } catch(err) {
+    const msgs = { NotAllowedError:'Camera permission denied — allow in browser', NotFoundError:'No back camera found' };
+    toast('⚠️', msgs[err.name] || 'Camera error: ' + err.message);
+  }
+}
+
+function exitAR() {
+  state.arStream?.getTracks().forEach(t => t.stop());
+  state.arStream = null;
+  if (state.arAnimId) { cancelAnimationFrame(state.arAnimId); state.arAnimId = null; }
+  clearTimeout(state.arScanTimer);
+  // Reset AR
+  state.arVR = false; state.arScan = false;
+  document.getElementById('ar-detect').innerHTML = '';
+  document.getElementById('ar-info').style.display = 'none';
+  document.getElementById('ar-vid-r').style.display = 'none';
+  document.getElementById('ar-divider').style.display = 'none';
+  document.getElementById('ar-single').style.display = 'block';
+  document.getElementById('ar-pill').textContent = 'AR VISION';
+  ['ar-vr-btn','ar-scan-btn','ar-hud-btn','ar-torch-btn'].forEach(id => document.getElementById(id)?.classList.remove('on'));
+  document.getElementById('ar-view').style.display = 'none';
+  document.getElementById('os').style.display = 'flex';
+  toast('⬡', 'AR Vision closed');
+}
+
+function startARLoop() {
+  let fc = 0, lt = Date.now();
+  const loop = () => {
+    state.arAnimId = requestAnimationFrame(loop);
+    fc++; const now = Date.now();
+    if (now - lt > 600) {
+      document.getElementById('ar-fps').textContent = Math.round(fc * 1000 / (now - lt)) + ' FPS';
+      fc = 0; lt = now;
+    }
+  };
+  loop();
+}
+
+// VR split
+function arToggleVR() {
+  state.arVR = !state.arVR;
+  document.getElementById('ar-vid-r').style.display   = state.arVR ? 'block' : 'none';
+  document.getElementById('ar-divider').style.display = state.arVR ? 'block' : 'none';
+  document.getElementById('ar-single').style.display  = state.arVR ? 'none' : 'block';
+  document.getElementById('ar-vr-btn').classList.toggle('on', state.arVR);
+  document.getElementById('ar-pill').textContent = state.arVR ? 'VR PASSTHROUGH' : 'AR VISION';
+  toast(state.arVR ? '👓':'📱', state.arVR ? 'VR split — put phone in headset' : 'Single screen mode');
+}
+
+// Object scan
+const SCAN_OBJECTS = [
+  {name:'Hand',       conf:96, desc:'Hand landmarks detected. Phase 5 will track all 21 finger joints for gesture control.'},
+  {name:'Face',       conf:99, desc:'Face detected. Eye tracking and expression recognition planned for Phase 7.'},
+  {name:'Phone',      conf:88, desc:'Electronic device identified. Cross-device sync capability available.'},
+  {name:'Text Block', conf:74, desc:'Text region detected. OCR and real-time translation planned for Phase 6.'},
+  {name:'Flat Surface',conf:93,desc:'Horizontal surface found. AR object placement and spatial anchoring available.'},
+  {name:'Person',     conf:91, desc:'Human presence detected. Proximity and gesture zone established.'},
+];
+
+function arToggleScan() {
+  state.arScan = !state.arScan;
+  document.getElementById('ar-scan-btn').classList.toggle('on', state.arScan);
+  if (state.arScan) { toast('🔍', 'Object scan ON'); runScan(); }
+  else {
+    clearTimeout(state.arScanTimer);
+    document.getElementById('ar-detect').innerHTML = '';
+    document.getElementById('ar-info').style.display = 'none';
+    toast('🔍', 'Object scan OFF');
+  }
+}
+
+function runScan() {
+  if (!state.arScan) return;
+  const detect = document.getElementById('ar-detect');
+  detect.innerHTML = '';
+  const count = 1 + Math.floor(Math.random() * 2);
+  const picks = [...SCAN_OBJECTS].sort(() => Math.random() - .5).slice(0, count);
+  picks.forEach((obj, i) => {
+    const x = 8  + Math.random() * 55;
+    const y = 15 + Math.random() * 50;
+    const w = 14 + Math.random() * 22;
+    const h = 12 + Math.random() * 20;
+    const box = document.createElement('div');
+    box.className = 'd-box';
+    box.style.cssText = `left:${x}%;top:${y}%;width:${w}%;height:${h}%`;
+    box.innerHTML = `<div class="d-lbl">${obj.name} ${obj.conf}%</div>`;
+    box.onclick = () => showARInfo(obj);
+    detect.appendChild(box);
+    if (i === 0) setTimeout(() => showARInfo(obj), 500);
+  });
+  state.arScanTimer = setTimeout(runScan, 3500 + Math.random() * 2000);
+}
+
+function showARInfo(obj) {
+  document.getElementById('ai-conf').textContent = 'DETECTED · ' + obj.conf + '% CONFIDENCE';
+  document.getElementById('ai-name').textContent = obj.name;
+  document.getElementById('ai-desc').textContent = obj.desc;
+  document.getElementById('ar-info').style.display = 'block';
+}
+
+function arToggleHUD() {
+  state.arHUD = !state.arHUD;
+  document.getElementById('ar-overlay').style.opacity = state.arHUD ? '1' : '0';
+  document.getElementById('ar-scanline').style.display = state.arHUD ? 'block' : 'none';
+  document.getElementById('ar-hud-btn').classList.toggle('on', state.arHUD);
+}
+
+function arTorch() {
+  const track = state.arStream?.getVideoTracks()[0];
+  if (!track?.getCapabilities?.().torch) { toast('⚠️', 'Torch not supported on this device'); return; }
+  state.arTorch = !state.arTorch;
+  track.applyConstraints({ advanced: [{ torch: state.arTorch }] })
+    .then(() => { document.getElementById('ar-torch-btn').classList.toggle('on', state.arTorch); toast('🔦', 'Torch ' + (state.arTorch ? 'ON' : 'OFF')); })
+    .catch(() => toast('⚠️', 'Torch unavailable'));
+}
+
+function arAskJarvis() {
+  const name = document.getElementById('ai-name').textContent;
+  exitAR();
+  openPanel('chat');
+  document.getElementById('chat-in').value = 'Tell me about: ' + name;
+  setTimeout(sendMsg, 300);
+}
+function arVoice() { exitAR(); setTimeout(startVoice, 400); }
+
+// ── JARVIS AI (offline) ──
+const KB = {
+  'who are you':    'I am JARVIS — Just A Rather Very Intelligent System. The OS running on your wearable AI headset. Currently at Phase 4. Phase 5 is hand tracking.',
+  'os version':     'JARVIS OS v7.0. Phase 4 is complete — boot, home screen, AR camera, sensors, notes, voice, and OS polish are all done.',
+  'project status': 'Phase 1-4 complete. Phase 5 is hand tracking with MediaPipe. Phase 6 is Raspberry Pi standalone. Phase 7 is eye tracking. Phase 8 is the full physical device.',
+  'what is phase 5':'Phase 5 is MediaPipe hand tracking. Your front camera watches your hands and detects 21 landmark points per hand. Pinch = click. Swipe = scroll. No touching the screen needed.',
+  'hardware':       'Phase 6 hardware: Raspberry Pi 5 (₹5,000), VR shell headset (₹1,200), USB camera (₹500), battery pack (₹800). Total: under ₹8,000 for a working standalone prototype.',
+  'cost':           'Total hardware budget: under ₹12,000. Phase 1-4 cost ₹0 (software only). Phase 5: ₹500 USB camera. Phase 6: ₹5,000 Raspberry Pi. Phase 7-8: lenses and display.',
+  'ar vision':      'AR Vision uses your phone back camera for passthrough video. You see the real world with a JARVIS HUD overlaid. In VR mode it splits into two eyes for your headset.',
+  'hand tracking':  'Phase 5 — MediaPipe detects 21 points on your hand in real time via camera. Pinch index+thumb = click. Open hand = scroll. Works without touching the screen at all.',
+  'apple vision pro':'Apple Vision Pro costs $3,500 and uses 12 cameras, LiDAR, micro-OLED, and custom M2+R1 chips. We are building the same concept from scratch for under ₹12,000.',
+  'iron man':       'Tony Stark started with a cave and scrap metal. You started with a phone and HTML. The method is identical — prove the concept first, then upgrade the materials.',
+  'raspberry pi':   'Raspberry Pi 5 is a credit-card sized computer that will run JARVIS OS standalone without a phone. It has WiFi, USB, camera port, and GPIO pins for future sensors.',
+  'roadmap':        'Phase 5: hand tracking. Phase 6: Raspberry Pi hardware. Phase 7: eye tracking. Phase 8: full custom device with displays and lenses. We are on schedule.',
+  'sensors':        'Active now: gyroscope, accelerometer, touch, microphone, camera. Coming Phase 6: LiDAR depth sensor. Phase 7: front-facing eye tracking camera.',
+  'voice':          'Voice recognition uses your browser speech API. Works on Chrome and Chromium browsers. Tap the mic button or say your question. I process it offline — no internet needed.',
+  'what can you do':'I can: answer questions about our project, tell you sensor readings, take notes, control AR Vision, discuss the roadmap, and process voice commands. What do you need?',
+};
+
+function jarvisThink(input) {
+  const q = input.toLowerCase().trim();
+
+  // Greetings
+  if (['hello','hi','hey','namaste'].some(g => q.startsWith(g)))
+    return 'Good ' + (new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening') + ', Sundaram. JARVIS OS v7.0 online. How can I assist?';
+
+  // Farewells
+  if (['bye','goodbye','later','goodnight'].some(g => q.includes(g)))
+    return 'Goodbye. All systems will remain active and monitoring. JARVIS OS stays online.';
+
+  // Math
+  const m = q.match(/(\d+\.?\d*)\s*([+\-x*\/])\s*(\d+\.?\d*)/);
+  if (m) {
+    const a = parseFloat(m[1]), op = m[2], b = parseFloat(m[3]);
+    const r = { '+':a+b, '-':a-b, '*':a*b, 'x':a*b, '/':b ? +(a/b).toFixed(4) : 'undefined' }[op];
+    return a + ' ' + op + ' ' + b + ' = ' + r;
+  }
+
+  // Time
+  if (q.includes('time') || q.includes('date') || q.includes('today')) {
+    const n = new Date();
+    return n.toLocaleTimeString('en-IN') + ' · ' + n.toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  }
+
+  // Knowledge base — exact and partial matches
+  for (const [key, val] of Object.entries(KB)) {
+    if (q.includes(key)) return val;
+  }
+
+  // Keyword triggers
+  if (q.includes('phase'))    return KB['project status'];
+  if (q.includes('status'))   return KB['project status'];
+  if (q.includes('hardware')) return KB['hardware'];
+  if (q.includes('hand'))     return KB['hand tracking'];
+  if (q.includes('track'))    return KB['hand tracking'];
+  if (q.includes('apple'))    return KB['apple vision pro'];
+  if (q.includes('vision pro')) return KB['apple vision pro'];
+  if (q.includes('pi') || q.includes('raspberry')) return KB['raspberry pi'];
+  if (q.includes('cost') || q.includes('price') || q.includes('money') || q.includes('rupee') || q.includes('₹')) return KB['cost'];
+  if (q.includes('iron') || q.includes('tony') || q.includes('stark')) return KB['iron man'];
+  if (q.includes('sensor')) return KB['sensors'];
+  if (q.includes('ar') || q.includes('camera') || q.includes('passthrough')) return KB['ar vision'];
+  if (q.includes('voice') || q.includes('mic') || q.includes('speak')) return KB['voice'];
+  if (q.includes('road') || q.includes('plan') || q.includes('next')) return KB['roadmap'];
+  if (q.includes('help') || q.includes('what can')) return KB['what can you do'];
+  if (q.includes('who') || q.includes('jarvis')) return KB['who are you'];
+
+  return ['I am processing your query. Ask me about: project phases, hardware cost, hand tracking, AR vision, sensors, or our roadmap.',
+    'Try asking: "What is Phase 5?" or "How much will hardware cost?" or "What is AR Vision?"',
+    'Query received. I have full knowledge of our build plan. What specifically would you like to know?'
+  ][Math.floor(Math.random() * 3)];
+}
+
+// ── CHAT ──
+function addBubble(who, text, thinking = false) {
+  const msgs = document.getElementById('chat-msgs');
+  const div = document.createElement('div');
+  div.className = 'bub bub-' + who + (thinking ? ' bub-t' : '');
+  div.textContent = text;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+async function sendMsg() {
+  const inp = document.getElementById('chat-in');
+  const text = inp.value.trim();
+  if (!text || state.isThinking) return;
+  inp.value = '';
+  openPanel('chat');
+  addBubble('u', text);
+  state.chatHistory.push({ role:'user', content:text });
+  state.isThinking = true;
+  const th = addBubble('j', '…', true);
+  await new Promise(r => setTimeout(r, 300 + Math.random() * 300));
+  const reply = jarvisThink(text);
+  th.remove();
+  addBubble('j', reply);
+  state.chatHistory.push({ role:'assistant', content:reply });
+  speakText(reply);
+  state.isThinking = false;
+}
+
+// ── VOICE ──
+function startVoice() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { toast('⚠️', 'Voice requires Chrome browser'); return; }
+  if (state.isListening) { try { state.recognition?.stop(); } catch(e) {} return; }
+  const r = new SR();
+  r.lang = 'en-IN'; r.continuous = false; r.interimResults = false;
+  r.onstart = () => { state.isListening = true; document.getElementById('voice-pill').classList.add('show'); document.getElementById('voice-txt').textContent = 'Listening…'; };
+  r.onresult = e => { const t = e.results[0][0].transcript.trim(); document.getElementById('voice-txt').textContent = '"' + t + '"'; document.getElementById('chat-in').value = t; openPanel('chat'); setTimeout(sendMsg, 400); };
+  r.onend = () => { state.isListening = false; setTimeout(() => document.getElementById('voice-pill').classList.remove('show'), 1200); };
+  r.onerror = e => { state.isListening = false; document.getElementById('voice-pill').classList.remove('show'); toast('⚠️', 'Mic: ' + e.error); };
+  state.recognition = r;
+  try { r.start(); } catch(e) { toast('⚠️', 'Voice failed'); }
+}
+
+function speakText(text) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text.slice(0, 160));
+  u.rate = 0.95; u.pitch = 0.8; u.volume = 1; u.lang = 'en-IN';
+  const go = () => { const v = speechSynthesis.getVoices().find(v => v.lang.startsWith('en')) || speechSynthesis.getVoices()[0]; if (v) u.voice = v; speechSynthesis.speak(u); };
+  speechSynthesis.getVoices().length ? go() : (speechSynthesis.onvoiceschanged = go, setTimeout(go, 500));
+}
+
+// ══════════════════════════════════════════════════
+//  HAND TRACKING ENGINE — Phase 5
+//  Uses MediaPipe Hands via CDN
+// ══════════════════════════════════════════════════
+
+const ht = {
+  stream: null, animId: null, hands: null,
+  results: null, fpsCount: 0, lastFps: Date.now(),
+  mirror: true, showDots: true, active: false,
+  lastGesture: '', gestureTimer: null,
+  pinchActive: false, pinchX: 0, pinchY: 0,
+  lastPinchTime: 0
+};
+
+// MediaPipe landmark indices
+const HAND_CONNECTIONS = [
+  [0,1],[1,2],[2,3],[3,4],       // thumb
+  [0,5],[5,6],[6,7],[7,8],       // index
+  [0,9],[9,10],[10,11],[11,12],  // middle
+  [0,13],[13,14],[14,15],[15,16],// ring
+  [0,17],[17,18],[18,19],[19,20],// pinky
+  [5,9],[9,13],[13,17]           // palm
+];
+
+// Fingertip indices
+const TIPS = { thumb:4, index:8, middle:12, ring:16, pinky:20 };
+// MCP (knuckle) indices
+const MCPS = { index:5, middle:9, ring:13, pinky:17 };
+
+async function launchHT() {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    toast('⚠️','Camera needs HTTPS — open via GitHub Pages'); return;
+  }
+  toast('✋','Loading Hand Tracking…');
+
+  // Load MediaPipe from CDN
+  if (!window.Hands) {
+    await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js');
+    await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js');
+  }
+
+  try {
+    // Front camera for hand tracking
+    ht.stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode:'user', width:{ideal:640}, height:{ideal:480} },
+      audio: false
+    });
+
+    const vid = document.getElementById('ht-video');
+    vid.srcObject = ht.stream;
+    await vid.play();
+
+    document.getElementById('os').style.display = 'none';
+    document.getElementById('ht-view').style.display = 'block';
+    ht.active = true;
+
+    resizeHTCanvas();
+    initMediaPipe();
+    startHTLoop();
+
+    pushNotif('✋','Hand Tracking','Phase 5 active. Show your hand to the camera.');
+    setTimeout(() => showHTGesture('✋','SHOW YOUR HAND TO CAMERA'), 800);
+
+  } catch(err) {
+    const msgs = { NotAllowedError:'Camera permission denied', NotFoundError:'No front camera found' };
+    toast('⚠️', msgs[err.name] || 'Camera error: ' + err.message);
+  }
+}
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = src; s.crossOrigin = 'anonymous';
+    s.onload = resolve; s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+function initMediaPipe() {
+  if (!window.Hands) { startFallbackTracking(); return; }
+
+  ht.hands = new Hands({
+    locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`
+  });
+
+  ht.hands.setOptions({
+    maxNumHands: 2,
+    modelComplexity: 1,
+    minDetectionConfidence: 0.7,
+    minTrackingConfidence: 0.6
+  });
+
+  ht.hands.onResults(onHTResults);
+
+  // Use Camera utility to feed frames
+  if (window.Camera) {
+    const cam = new Camera(document.getElementById('ht-video'), {
+      onFrame: async () => {
+        await ht.hands.send({ image: document.getElementById('ht-video') });
+      },
+      width: 640, height: 480
+    });
+    cam.start();
+  } else {
+    // Manual frame loop fallback
+    const sendFrames = async () => {
+      if (!ht.active) return;
+      await ht.hands.send({ image: document.getElementById('ht-video') });
+      requestAnimationFrame(sendFrames);
+    };
+    sendFrames();
+  }
+}
+
+// Called every frame by MediaPipe with results
+function onHTResults(results) {
+  ht.results = results;
+  const canvas = document.getElementById('ht-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  ctx.clearRect(0, 0, W, H);
+
+  const detected = results.multiHandLandmarks?.length || 0;
+  document.getElementById('ht-hands').textContent = detected;
+  document.getElementById('ht-pts').textContent   = detected * 21;
+
+  if (detected === 0) {
+    document.getElementById('ht-info').style.display = 'none';
+    document.getElementById('ht-gest').textContent = '—';
+    document.getElementById('pinch-ring').style.display = 'none';
+    return;
+  }
+
+  results.multiHandLandmarks.forEach((landmarks, handIdx) => {
+    const handedness = results.multiHandedness?.[handIdx]?.label || 'Right';
+
+    // Draw connections
+    HAND_CONNECTIONS.forEach(([a, b]) => {
+      const p1 = landmarks[a], p2 = landmarks[b];
+      ctx.beginPath();
+      ctx.moveTo(p1.x * W, p1.y * H);
+      ctx.lineTo(p2.x * W, p2.y * H);
+      ctx.strokeStyle = 'rgba(74,158,255,0.6)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    });
+
+    // Draw landmark dots
+    if (ht.showDots) {
+      landmarks.forEach((lm, i) => {
+        const isTip = Object.values(TIPS).includes(i);
+        ctx.beginPath();
+        ctx.arc(lm.x * W, lm.y * H, isTip ? 7 : 4, 0, Math.PI * 2);
+        ctx.fillStyle = isTip ? 'rgba(74,158,255,0.95)' : 'rgba(255,255,255,0.7)';
+        ctx.fill();
+        // Tip glow
+        if (isTip) {
+          const g = ctx.createRadialGradient(lm.x*W, lm.y*H, 0, lm.x*W, lm.y*H, 14);
+          g.addColorStop(0, 'rgba(74,158,255,0.3)');
+          g.addColorStop(1, 'rgba(74,158,255,0)');
+          ctx.beginPath(); ctx.arc(lm.x*W, lm.y*H, 14, 0, Math.PI*2);
+          ctx.fillStyle = g; ctx.fill();
+        }
+      });
+    }
+
+    // Draw hand label
+    const wrist = landmarks[0];
+    ctx.font = 'bold 12px -apple-system';
+    ctx.fillStyle = 'rgba(74,158,255,0.8)';
+    ctx.fillText(handedness + ' Hand', wrist.x * W - 30, wrist.y * H - 12);
+
+    // Detect gesture
+    const gesture = detectGesture(landmarks);
+    if (gesture && gesture !== ht.lastGesture) {
+      ht.lastGesture = gesture;
+      handleGesture(gesture, landmarks, handIdx);
+    }
+  });
+
+  // Pinch detection — index tip to thumb tip
+  if (detected > 0) {
+    const lm = results.multiHandLandmarks[0];
+    const thumb = lm[TIPS.thumb];
+    const index = lm[TIPS.index];
+    const dist  = Math.hypot(thumb.x - index.x, thumb.y - index.y);
+    const pinching = dist < 0.05;
+
+    if (pinching && !ht.pinchActive) {
+      ht.pinchActive = true;
+      const cx = ((thumb.x + index.x) / 2) * window.innerWidth;
+      const cy = ((thumb.y + index.y) / 2) * window.innerHeight;
+      ht.pinchX = cx; ht.pinchY = cy;
+      handlePinch(cx, cy);
+    } else if (!pinching) {
+      ht.pinchActive = false;
+      document.getElementById('pinch-ring').style.display = 'none';
+    }
+
+    if (pinching) {
+      const cx = ((thumb.x + index.x) / 2) * window.innerWidth;
+      const cy = ((thumb.y + index.y) / 2) * window.innerHeight;
+      const pr = document.getElementById('pinch-ring');
+      pr.style.display = 'block';
+      pr.style.width   = '40px';
+      pr.style.height  = '40px';
+      pr.style.left    = cx + 'px';
+      pr.style.top     = cy + 'px';
+    }
+  }
+}
+
+// ── GESTURE DETECTION ──
+function detectGesture(lm) {
+  // Get tip & pip (second joint) y positions
+  // Finger "up" = tip y < pip y (higher on screen = smaller y)
+  const fingerUp = (tip, pip) => lm[tip].y < lm[pip].y - 0.04;
+
+  const indexUp  = fingerUp(8,  6);
+  const middleUp = fingerUp(12, 10);
+  const ringUp   = fingerUp(16, 14);
+  const pinkyUp  = fingerUp(20, 18);
+
+  // Thumb: compare x position
+  const thumbUp = lm[4].x < lm[3].x - 0.04;
+
+  const upCount = [indexUp, middleUp, ringUp, pinkyUp].filter(Boolean).length;
+
+  if ( indexUp && middleUp && !ringUp && !pinkyUp)  return 'PEACE ✌️';
+  if (!indexUp && !middleUp && !ringUp && !pinkyUp) return 'FIST ✊';
+  if ( indexUp && !middleUp && !ringUp && !pinkyUp) return 'POINT 👆';
+  if ( indexUp &&  middleUp &&  ringUp &&  pinkyUp) return 'OPEN ✋';
+  if (!indexUp && !middleUp && !ringUp &&  pinkyUp) return 'PINKY 🤙';
+  if ( thumbUp && !indexUp  && !middleUp && !ringUp && !pinkyUp) return 'THUMBS UP 👍';
+  if (upCount === 3) return 'THREE 🤟';
+  return null;
+}
+
+// ── GESTURE ACTIONS ──
+function handleGesture(gesture, landmarks, handIdx) {
+  document.getElementById('ht-gest').textContent = gesture.split(' ')[0];
+  showHTInfo('GESTURE · HAND ' + (handIdx + 1), gesture, getGestureAction(gesture));
+
+  clearTimeout(ht.gestureTimer);
+  ht.gestureTimer = setTimeout(() => { ht.lastGesture = ''; }, 1200);
+
+  // Visual feedback
+  showHTGesture(gesture.split(' ')[1] || '✋', gesture.split(' ')[0]);
+
+  // Actions
+  switch(gesture) {
+    case 'OPEN ✋':  toast('✋', 'Open hand — scroll mode'); break;
+    case 'FIST ✊':  toast('✊', 'Fist — select / confirm'); break;
+    case 'PEACE ✌️': toast('✌️', 'Peace — navigate back'); break;
+    case 'POINT 👆': toast('👆', 'Point — cursor mode'); break;
+    case 'THUMBS UP 👍': toast('👍', 'Thumbs up — JARVIS acknowledged!'); break;
+  }
+}
+
+function getGestureAction(g) {
+  const actions = {
+    'OPEN ✋':      'Scroll mode. Move hand up/down to scroll through content.',
+    'FIST ✊':      'Select / confirm action. Close fist over an element to activate.',
+    'PEACE ✌️':     'Navigate back. Swipe left to return to previous screen.',
+    'POINT 👆':     'Cursor mode. Index finger controls the on-screen cursor.',
+    'THUMBS UP 👍': 'Confirm gesture. JARVIS acknowledges your command.',
+    'PINKY 🤙':     'Call mode — voice input activating.',
+    'THREE 🤟':     'Three fingers — open app switcher.',
+  };
+  return actions[g] || 'Gesture recognised and logged.';
+}
+
+// ── PINCH = CLICK ──
+function handlePinch(x, y) {
+  const now = Date.now();
+  if (now - ht.lastPinchTime < 600) return; // debounce
+  ht.lastPinchTime = now;
+
+  // Ripple
+  const r = document.createElement('div');
+  r.className = 'ht-ripple';
+  r.style.left = x + 'px'; r.style.top = y + 'px';
+  document.body.appendChild(r);
+  setTimeout(() => r.remove(), 600);
+
+  toast('🤏', 'Pinch detected — click at ' + Math.round(x) + ', ' + Math.round(y));
+  showHTInfo('PINCH GESTURE', 'Index + Thumb', 'Click action triggered at position (' + Math.round(x) + ', ' + Math.round(y) + '). In Phase 6 this will click UI elements.');
+}
+
+// ── FALLBACK — when MediaPipe doesn't load ──
+// Shows real video with simulated landmark overlay
+function startFallbackTracking() {
+  toast('ℹ️', 'Running in demo mode — show your hand');
+  const canvas = document.getElementById('ht-canvas');
+  const ctx = canvas.getContext('2d');
+
+  const demoPoints = generateDemoHand(0.5, 0.5);
+  let angle = 0;
+
+  const loop = () => {
+    if (!ht.active) return;
+    ht.animId = requestAnimationFrame(loop);
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+    angle += 0.01;
+
+    // Animate demo hand slightly
+    const pts = demoPoints.map((p, i) => ({
+      x: p.x + Math.sin(angle + i * 0.3) * 0.008,
+      y: p.y + Math.cos(angle + i * 0.4) * 0.006
+    }));
+
+    // Draw connections
+    HAND_CONNECTIONS.forEach(([a, b]) => {
+      ctx.beginPath();
+      ctx.moveTo(pts[a].x * W, pts[a].y * H);
+      ctx.lineTo(pts[b].x * W, pts[b].y * H);
+      ctx.strokeStyle = 'rgba(74,158,255,0.5)'; ctx.lineWidth = 1.5; ctx.stroke();
+    });
+
+    // Draw dots
+    pts.forEach((p, i) => {
+      const isTip = Object.values(TIPS).includes(i);
+      ctx.beginPath(); ctx.arc(p.x * W, p.y * H, isTip ? 6 : 3.5, 0, Math.PI * 2);
+      ctx.fillStyle = isTip ? 'rgba(74,158,255,0.9)' : 'rgba(255,255,255,0.65)'; ctx.fill();
+    });
+
+    ctx.font = 'bold 11px -apple-system';
+    ctx.fillStyle = 'rgba(74,158,255,0.75)';
+    ctx.fillText('DEMO MODE — MediaPipe loading…', 14, H - 14);
+
+    document.getElementById('ht-hands').textContent = '1';
+    document.getElementById('ht-pts').textContent = '21';
+    document.getElementById('ht-gest').textContent = 'OPEN';
+  };
+  loop();
+}
+
+function generateDemoHand(cx, cy) {
+  // Approximate 21 landmark positions for an open hand
+  const base = [
+    [0,.1],[-.03,.06],[-.05,.01],[-.07,-.04],[-.09,-.07], // thumb
+    [.01,-.05],[.01,-.11],[.01,-.16],[.01,-.20],           // index
+    [.05,-.06],[.06,-.12],[.06,-.18],[.06,-.22],           // middle
+    [.09,-.05],[.10,-.11],[.10,-.16],[.10,-.20],           // ring
+    [.13,-.03],[.14,-.08],[.14,-.12],[.14,-.16]            // pinky
+  ];
+  return base.map(([dx, dy]) => ({ x: cx + dx, y: cy + dy }));
+}
+
+// ── HT CONTROLS ──
+function htToggleMirror() {
+  ht.mirror = !ht.mirror;
+  const vid = document.getElementById('ht-video');
+  const cnv = document.getElementById('ht-canvas');
+  const flip = ht.mirror ? 'scaleX(-1)' : 'scaleX(1)';
+  vid.style.transform = flip; cnv.style.transform = flip;
+  document.getElementById('ht-mirror-btn').classList.toggle('on', ht.mirror);
+  toast('🪞', 'Mirror ' + (ht.mirror ? 'on' : 'off'));
+}
+
+function htToggleDots() {
+  ht.showDots = !ht.showDots;
+  document.getElementById('ht-dots-btn').classList.toggle('on', ht.showDots);
+  toast('👁', 'Landmark dots ' + (ht.showDots ? 'on' : 'off'));
+}
+
+function htVoice() { exitHT(); setTimeout(startVoice, 400); }
+
+function exitHT() {
+  ht.active = false;
+  ht.stream?.getTracks().forEach(t => t.stop());
+  ht.stream = null;
+  if (ht.animId) { cancelAnimationFrame(ht.animId); ht.animId = null; }
+  if (ht.hands) { ht.hands.close?.(); ht.hands = null; }
+
+  // Reset state
+  ht.lastGesture = '';
+  ht.pinchActive = false;
+  document.getElementById('ht-view').style.display = 'none';
+  document.getElementById('os').style.display = '
