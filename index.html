@@ -66,7 +66,7 @@ body {
 
 /* ── OS SHELL ── */
 #os { position:fixed; inset:0; display:none; flex-direction:column; z-index:1; }
-#os.on { display:flex; }
+#os.on { display:flex !important; flex-direction:column; }
 
 /* ── STATUS BAR ── */
 #sb {
@@ -1319,8 +1319,9 @@ const state = {
 };
 
 // ── BOOT ──
-(function boot() {
+function runBoot() {
   const fill = document.getElementById('b-fill');
+  if (!fill) { setTimeout(runBoot, 50); return; }
   let p = 0;
   const iv = setInterval(() => {
     p += Math.random() * 16 + 4;
@@ -1328,14 +1329,25 @@ const state = {
     if (p >= 100) {
       clearInterval(iv);
       setTimeout(() => {
-        document.getElementById('boot').classList.add('out');
-        document.getElementById('os').classList.add('on');
-        setTimeout(() => document.getElementById('boot').style.display = 'none', 800);
+        const boot = document.getElementById('boot');
+        const os   = document.getElementById('os');
+        if (!boot || !os) return;
+        boot.classList.add('out');
+        os.classList.add('on');
+        os.style.display = 'flex'; // force show in case CSS didn't apply
+        setTimeout(() => { boot.style.display = 'none'; }, 800);
         initOS();
       }, 300);
     }
   }, 75);
-})();
+}
+
+// Wait for full DOM before booting
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', runBoot);
+} else {
+  runBoot();
+}
 
 function initOS() {
   updateGreeting();
@@ -1404,7 +1416,8 @@ function openPanel(id) {
   if (!el) return;
   el.classList.add('open');
   if (id === 'chat' && state.chatHistory.length === 0)
-    addBubble('j', 'Hello Sundaram. JARVIS OS v7.0 is online — Phase 5 complete — hand tracking active. How can I assist you?');
+    addBubble('j', 'Hello Sundaram. JARVIS OS v7.0 is online — Phase 7 complete. How can I assist you?');
+  if (id === 'phone') setTimeout(initPhonePanel, 100);
 }
 function closePanel(id) { const el = document.getElementById('p-' + id); if (el) el.classList.remove('open'); }
 function bgClose(e, id) { if (e.target === e.currentTarget) closePanel(id); }
@@ -2163,17 +2176,4 @@ function startHTLoop() {
         String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
     }
   };
-  loop();
-}
-
-// ── HT UI HELPERS ──
-function showHTGesture(icon, label, dur = 1200) {
-  document.getElementById('htg-icon').textContent  = icon;
-  document.getElementById('htg-label').textContent = label;
-  const el = document.getElementById('ht-gesture');
-  el.classList.add('show');
-  clearTimeout(showHTGesture._t);
-  showHTGesture._t = setTimeout(() => el.classList.remove('show'), dur);
-}
-
-function showHTInfo
+  
