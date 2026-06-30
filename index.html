@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>JARVIS</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- BOOT -->
+<div id="boot">
+  <div class="boot-ring"><div class="boot-icon">⬡</div></div>
+  <div class="boot-label">JARVIS</div>
+</div>
+
+<!-- WORLD (camera passthrough) -->
+<div id="world">
+  <div id="no-cam-bg"></div>
+  <video id="cam-back" autoplay playsinline muted></video>
+  <video id="cam-back-r" autoplay playsinline muted></video>
+  <div id="vr-divider"></div>
+</div>
+
+<!-- PARTICLE EFFECTS LAYER -->
+<canvas id="particle-canvas"></canvas>
+
+<!-- HAND TRACKING CANVAS -->
+<canvas id="hand-canvas"></canvas>
+
+<!-- GAZE CURSOR -->
+<div id="gaze">
+  <div class="gaze-ring" id="gaze-ring">
+    <div class="gaze-dot"></div>
+  </div>
+</div>
+
+<!-- HUD -->
+<div id="hud">
+  <div class="hud-corner hc-tl"></div>
+  <div class="hud-corner hc-tr"></div>
+  <div class="hud-corner hc-bl"></div>
+  <div class="hud-corner hc-br"></div>
+  <div id="hud-top">
+    <div class="hud-time" id="hud-time">00:00</div>
+    <div class="hud-status">
+      <div class="hud-pill" id="hud-mode">JARVIS OS</div>
+      <div class="hud-pill" id="hud-fps" style="margin-top:3px">-- FPS</div>
+    </div>
+  </div>
+  <div id="hud-hands">
+    <div class="hand-ind" id="hand-l-ind">
+      <div class="hand-gesture" id="hand-l-gest"></div>
+      <div class="hand-ico">🤚</div>
+      <div class="hand-lbl">LEFT</div>
+    </div>
+    <div class="hand-ind" id="hand-r-ind">
+      <div class="hand-gesture" id="hand-r-gest"></div>
+      <div class="hand-ico">🤚</div>
+      <div class="hand-lbl">RIGHT</div>
+    </div>
+  </div>
+</div>
+
+<!-- DEBUG PANEL (triple-tap top-left corner to toggle) -->
+<div id="debug-panel"></div>
+
+<!-- GESTURE FLASH -->
+<div id="gesture-flash">
+  <div class="gf-icon" id="gf-icon"></div>
+  <div class="gf-text" id="gf-text"></div>
+</div>
+
+<!-- VOICE BAR -->
+<div id="voice-bar">
+  <div class="v-waves"><div class="v-wave"></div><div class="v-wave"></div><div class="v-wave"></div><div class="v-wave"></div><div class="v-wave"></div></div>
+  <div id="voice-text">Listening…</div>
+</div>
+
+<!-- MENU BAR (swipe up to show) -->
+<div id="menubar">
+  <div class="menu-wrap">
+    <div class="menu-item" onclick="spawnWindow('jarvis')"><div class="menu-ico">🤖</div><div class="menu-lbl">JARVIS</div></div>
+    <div class="menu-item" onclick="spawnWindow('clock')"><div class="menu-ico">🕐</div><div class="menu-lbl">CLOCK</div></div>
+    <div class="menu-item" onclick="spawnWindow('calc')"><div class="menu-ico">🧮</div><div class="menu-lbl">CALC</div></div>
+    <div class="menu-item" onclick="spawnWindow('weather')"><div class="menu-ico">🌤</div><div class="menu-lbl">WEATHER</div></div>
+    <div class="menu-item" onclick="spawnWindow('music')"><div class="menu-ico">🎵</div><div class="menu-lbl">MUSIC</div></div>
+    <div class="menu-item" onclick="spawnWindow('sensors')"><div class="menu-ico">📡</div><div class="menu-lbl">SENSORS</div></div>
+    <div class="menu-item" onclick="spawnWindow('notes')"><div class="menu-ico">📝</div><div class="menu-lbl">NOTES</div></div>
+    <div class="menu-item" onclick="spawnWindow('system')"><div class="menu-ico">🗺</div><div class="menu-lbl">SYSTEM</div></div>
+    <div class="menu-sep"></div>
+    <div class="menu-item" onclick="toggleVR()"><div class="menu-ico">👓</div><div class="menu-lbl">VR</div></div>
+    <div class="menu-item" onclick="startVoice()"><div class="menu-ico">🎤</div><div class="menu-lbl">VOICE</div></div>
+  </div>
+</div>
+
+<!-- ══════════ SCRIPTS (load in order) ══════════ -->
+<script src="jarvis-core.js"></script>
+<script src="jarvis-hands.js"></script>
+<script src="jarvis-windows.js"></script>
+<script src="jarvis-ai.js"></script>
+</body>
+</html>
+
