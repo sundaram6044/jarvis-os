@@ -42,7 +42,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:-ap
 #hud-top{position:absolute;top:0;left:0;right:0;padding:16px 22px;display:flex;justify-content:space-between;align-items:flex-start;}
 .hud-time{font-size:13px;font-weight:500;color:rgba(255,255,255,.8);letter-spacing:.3px;}
 .hud-status{display:flex;flex-direction:column;align-items:flex-end;gap:3px;}
-.hud-pill{font-size:9px;letter-spacing:2px;color:rgba(255,255,255,.45);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:3px 10px;}
+.hud-pill{font-size:9px;letter-spacing:2px;color:rgba(255,255,255,.45);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:3px 10px;transition:border-color .3s;}
 #hud-hands{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:16px;align-items:flex-end;}
 .hand-ind{display:flex;flex-direction:column;align-items:center;gap:4px;opacity:.4;transition:opacity .2s;}
 .hand-ind.active{opacity:1;}
