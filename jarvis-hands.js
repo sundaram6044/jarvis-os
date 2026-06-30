@@ -62,6 +62,9 @@ function setupHands(vid){
         document.getElementById('hud-mode').textContent = 'AR VISION';
         document.getElementById('gaze').style.display = 'block';
         showGestureFlash('✋','HAND TRACKING ACTIVE');
+        // Load eye tracking on the same video stream after hands succeeds
+        loadEyeTracking(vid);
+        startFusionLoop();
       }
       onHandResults(r);
     });
@@ -354,16 +357,7 @@ function detectGesture(lm, mxf){
   return null;
 }
 
-// ── PINCH ACTION ──────────────────────────────────────────
+// ── PINCH ACTION (now routed through fusion) ──────────────
 function onPinch(x, y, gesture){
-  spawnRipple(x, y);
-  var hit = hitTestWindows(x, y);
-  if(hit){
-    focusWindow(hit);
-    var btn = hitTestButton(hit, x, y);
-    if(btn === 'close') throwWindow(hit);
-    else if(btn === 'min') minimizeWindow(hit.id);
-  } else {
-    if(!J.menuVisible) showMenu(); else hideMenu();
-  }
-}
+  FUSION.trigger('hand', 'pinch', x, y);
+      }
