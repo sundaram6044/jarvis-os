@@ -339,4 +339,4 @@ function saveNote(id){
   J.notes.unshift({txt:txt, time:new Date()}); ta.value='';
   var saved = document.getElementById(id+'-saved');
   if(saved) saved.innerHTML = J.notes.slice(0,5).map(function(n){ return '<div class="saved-note">'+n.txt+'</div>'; }).join('');
-}
+    }
