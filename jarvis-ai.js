@@ -18,6 +18,8 @@ var KB = {
   'throw':'Make a fist with both hands and bring them together quickly like a clap. The focused window flies up and closes.',
   'calculator':'The calculator window does basic arithmetic. Pinch the buttons to enter numbers and operations.',
   'weather':'The weather window shows simulated conditions. Real weather data requires Phase 9 internet connectivity.',
+  'fusion':'Multi-modal fusion means hand, eye, and voice all feed one cursor system. Whichever input is freshest and most confident drives the pointer. Say "select" anytime to click using voice.',
+  'multimodal':'Your hand, your eyes, and your voice all work together now. Look at something and blink twice to select it. Or point and pinch. Or just say "select". Whatever is fastest wins.',
   'music':'The music player is a UI demo. Real audio playback will be added once we connect actual audio files.',
 };
 
@@ -86,6 +88,10 @@ function startVoice(){
   J.rec.onresult = function(e){
     var t = e.results[0][0].transcript.trim();
     document.getElementById('voice-text').textContent = '"'+t+'"';
+
+    // Check for fusion select commands first ("select", "click", "go")
+    if(handleVoiceFusionCommand(t)) return;
+
     var jw = J.windows.find(function(w){ return w.type==='jarvis'; });
     if(jw){
       var inp = document.getElementById(jw.id+'-in');
