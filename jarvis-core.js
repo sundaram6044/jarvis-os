@@ -144,7 +144,8 @@ function enableTouchFallback(){
   document.addEventListener('touchend', function(e){
     if(e.target.closest('.fw') || e.target.closest('#menubar')) return;
     var x = e.changedTouches[0].clientX, y = e.changedTouches[0].clientY;
-    spawnRipple(x, y); onPinch(x, y, 'TAP');
+    if(window.FUSION) FUSION.trigger('hand', 'pinch', x, y);
+    else { spawnRipple(x, y); }
   }, {passive:true});
 }
 
