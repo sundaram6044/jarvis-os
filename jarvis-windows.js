@@ -102,11 +102,27 @@ function hitTestWindows(x, y){
   return null;
 }
 
+// Menu items are hard to pinch precisely — use generous padding around each
+function hitTestMenu(x, y){
+  var items = document.querySelectorAll('#menubar .menu-item');
+  var PAD = 18; // generous extra hit area beyond visible bounds
+  for(var i=0; i<items.length; i++){
+    var r = items[i].getBoundingClientRect();
+    if(x>=r.left-PAD && x<=r.right+PAD && y>=r.top-PAD && y<=r.bottom+PAD){
+      return items[i];
+    }
+  }
+  return null;
+}
+
 function hitTestButton(win, x, y){
+  // Close/minimize dots are tiny (13px) — give them a MUCH bigger hit zone
+  // so hand-tracking jitter doesn't cause missed clicks
+  var PAD = 22;
   var btns = win.el.querySelectorAll('.fw-btn');
   for(var i=0; i<btns.length; i++){
     var r = btns[i].getBoundingClientRect();
-    if(x>=r.left-8 && x<=r.right+8 && y>=r.top-8 && y<=r.bottom+8) return btns[i].dataset.action;
+    if(x>=r.left-PAD && x<=r.right+PAD && y>=r.top-PAD && y<=r.bottom+PAD) return btns[i].dataset.action;
   }
   return null;
 }
