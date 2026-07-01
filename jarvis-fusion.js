@@ -22,22 +22,42 @@ var FUSION = {
 
     if(action === 'blink-double' || action === 'pinch' || action === 'voice-select'){
       // This is a SELECT/CLICK action regardless of which channel
+      this.flashChannel(channel);
       this.executeSelect(channel, x, y);
     }
     updateFusionStatus();
   },
 
+  // Visible pulse on the HUD pill so you can SEE which channel fired
+  flashChannel: function(channel){
+    var pill = document.getElementById('fusion-pill');
+    if(!pill) return;
+    var colors = {hand:'#4A9EFF', eye:'#B4FFC8', voice:'#FFB464'};
+    pill.style.transition = 'none';
+    pill.style.background = colors[channel] || '#4A9EFF';
+    pill.style.color = '#000';
+    pill.style.transform = 'scale(1.15)';
+    requestAnimationFrame(function(){
+      pill.style.transition = 'background .5s, color .5s, transform .3s';
+      pill.style.background = '';
+      pill.style.color = '';
+      pill.style.transform = 'scale(1)';
+    });
+  },
+
   // ── Unified select/click — works from hand pinch, eye blink, or voice ──
   executeSelect: function(channel, x, y){
     spawnRipple(x, y);
+    var verbose = channel !== 'hand'; // hand already has pinch-ring feedback
     var hit = hitTestWindows(x, y);
     if(hit){
       focusWindow(hit);
       var btn = hitTestButton(hit, x, y);
       if(btn === 'close') throwWindow(hit);
       else if(btn === 'min') minimizeWindow(hit.id);
-      showGestureFlash(channelIcon(channel), channel.toUpperCase()+' SELECT');
+      else if(verbose) showGestureFlash(channelIcon(channel), channel.toUpperCase()+' → '+(hit.type||'WINDOW').toUpperCase());
     } else {
+      if(verbose) showGestureFlash(channelIcon(channel), channel.toUpperCase()+' SELECT — NO TARGET');
       if(!J.menuVisible) showMenu(); else hideMenu();
     }
   },
@@ -115,10 +135,13 @@ function hookVoiceFusion(){
 }
 
 function handleVoiceFusionCommand(transcript){
-  var low = transcript.toLowerCase();
-  if(low.includes('select') || low.includes('click') || low === 'go' || low.includes('choose')){
+  var low = transcript.toLowerCase().trim();
+  var triggers = ['select','click','go','choose','tap','confirm','pick that','open that'];
+  var matched = triggers.some(function(t){ return low === t || low.indexOf(t) === 0; });
+  if(matched){
+    showGestureFlash('🎤','VOICE SELECT TRIGGERED');
     FUSION.trigger('voice', 'voice-select', J.gazeX, J.gazeY);
     return true;
   }
   return false;
-  }
+}
