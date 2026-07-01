@@ -164,9 +164,13 @@ function onHandResults(results){
     var th = lm[TIPS_OBJ.thumb], ix = lm[TIPS_OBJ.index];
     var pDist = Math.hypot(mxf(th.x)-mxf(ix.x), th.y-ix.y);
     pinchSmoothBuf.push(pDist);
-    if(pinchSmoothBuf.length > 3) pinchSmoothBuf.shift();
+    if(pinchSmoothBuf.length > 5) pinchSmoothBuf.shift(); // bigger buffer = steadier reading
     var avgDist = pinchSmoothBuf.reduce(function(a,b){return a+b;},0) / pinchSmoothBuf.length;
-    var nowPinching = avgDist < 0.055;
+    // Hysteresis: enter pinch at tighter threshold, exit at looser threshold
+    // This stops jittery tracking from rapidly flickering pinch on/off
+    var wasPinching = J._rawPinching || false;
+    var nowPinching = wasPinching ? (avgDist < 0.075) : (avgDist < 0.06);
+    J._rawPinching = nowPinching;
 
     document.getElementById('gaze-ring').className = 'gaze-ring' + (nowPinching?' pinch':'');
 
@@ -178,7 +182,7 @@ function onHandResults(results){
     } else if(!nowPinching){ J.pinchActive = false; }
 
     if(J.debugMode){
-      updateDebug('Gesture: '+(g?g.label:'-')+'<br>Pinch dist: '+avgDist.toFixed(3)+'<br>Hands: '+detected+'<br>Vel: '+Math.round(Math.hypot(J.velX,J.velY)));
+      updateDebug('Gesture: '+(g?g.label:'-')+'<br>Pinch dist: '+avgDist.toFixed(3)+' ('+(nowPinching?'ON':'off')+')<br>Hands: '+detected+'<br>Menu: '+(J.menuVisible?'open':'closed'));
     }
   }
 
@@ -268,25 +272,29 @@ function processTwoHands(lL, lR, mxf, W, H, ctx){
 
 // ── SINGLE HAND ACTIONS ───────────────────────────────────
 function handleSingleHand(g, lm, mxf, W, H){
-  if(!g) return;
-  var label = g.label;
   var wy = lm[0].y * H;
 
+  // Swipe tracking runs ALWAYS — even if hand shape doesn't match a named
+  // gesture exactly. This fixes swipe-up-for-menu being unreliable, since
+  // during a fast swipe the fingers rarely form a clean gesture shape.
   wristHistory.push({y:wy, x:mxf(lm[0].x)*W, t:Date.now()});
   if(wristHistory.length > 15) wristHistory.shift();
 
-  if(wristHistory.length >= 6){
+  if(wristHistory.length >= 5){
     var old = wristHistory[0], cur = wristHistory[wristHistory.length-1];
     var dy = old.y-cur.y, dx = old.x-cur.x, dt = cur.t-old.t;
-    if(dt < 500 && Math.abs(dy) > H*0.12){
+    if(dt < 550 && Math.abs(dy) > H*0.10){
       if(dy > 0 && !J.menuVisible){ showMenu(); wristHistory=[]; }
       else if(dy < 0 && J.menuVisible){ hideMenu(); wristHistory=[]; }
     }
-    if(dt < 500 && Math.abs(dx) > W*0.15 && J.focusedWin){
+    if(dt < 550 && Math.abs(dx) > W*0.15 && J.focusedWin){
       if(dx > 0){ throwWindowDir(J.focusedWin,'right'); wristHistory=[]; }
       else { throwWindowDir(J.focusedWin,'left'); wristHistory=[]; }
     }
   }
+
+  if(!g) return; // gesture-specific actions below need a recognised shape
+  var label = g.label;
 
   if(label === 'OPEN' && J.focusedWin){
     var iy = lm[8].y*H;
@@ -360,4 +368,4 @@ function detectGesture(lm, mxf){
 // ── PINCH ACTION (now routed through fusion) ──────────────
 function onPinch(x, y, gesture){
   FUSION.trigger('hand', 'pinch', x, y);
-      }
+    }
