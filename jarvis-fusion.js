@@ -49,6 +49,18 @@ var FUSION = {
   executeSelect: function(channel, x, y){
     spawnRipple(x, y);
     var verbose = channel !== 'hand'; // hand already has pinch-ring feedback
+
+    // Check menu FIRST if it's open — this was the main bug: menu items were never hit-tested
+    if(J.menuVisible){
+      var menuHit = hitTestMenu(x, y);
+      if(menuHit){
+        menuHit.click(); // trigger the actual DOM click (spawns window etc)
+        hideMenu();
+        if(verbose) showGestureFlash(channelIcon(channel), channel.toUpperCase()+' → MENU');
+        return;
+      }
+    }
+
     var hit = hitTestWindows(x, y);
     if(hit){
       focusWindow(hit);
