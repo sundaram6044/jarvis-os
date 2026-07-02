@@ -12,6 +12,7 @@ var J = {
   // Gaze (smoothed cursor)
   gazeX: window.innerWidth/2, gazeY: window.innerHeight/2,
   tgx: window.innerWidth/2, tgy: window.innerHeight/2,
+  dispX: window.innerWidth/2, dispY: window.innerHeight/2, // visible cursor pos (can differ from gazeX/Y when magnet-snapped)
   // Velocity tracking for prediction
   velX: 0, velY: 0, prevTgx: window.innerWidth/2, prevTgy: window.innerHeight/2,
   // Modes
@@ -173,9 +174,27 @@ function startGazeLoop(){
     J.gazeX += (predictX - J.gazeX) * factor;
     J.gazeY += (predictY - J.gazeY) * factor;
 
+    // ── MAGNETIC SNAP — pull the visible cursor toward nearby targets ──
+    // This is what makes imprecise pointing feel precise: the cursor
+    // itself visually jumps to the button/icon once you're close enough.
+    var snapTarget = (typeof findNearestInteractive === 'function')
+      ? findNearestInteractive(J.gazeX, J.gazeY) : null;
+
+    if(snapTarget && snapTarget.kind !== 'focus'){
+      // Snap toward the target's exact center — fast pull-in
+      J.dispX += (snapTarget.cx - J.dispX) * 0.4;
+      J.dispY += (snapTarget.cy - J.dispY) * 0.4;
+      document.getElementById('gaze-ring').classList.add('snapped');
+    } else {
+      // No target nearby — cursor follows raw tracked position
+      J.dispX += (J.gazeX - J.dispX) * 0.5;
+      J.dispY += (J.gazeY - J.dispY) * 0.5;
+      document.getElementById('gaze-ring').classList.remove('snapped');
+    }
+
     var g = document.getElementById('gaze');
-    g.style.left = J.gazeX + 'px';
-    g.style.top = J.gazeY + 'px';
+    g.style.left = J.dispX + 'px';
+    g.style.top = J.dispY + 'px';
 
     // Hover detection - highlight window under cursor
     var hovered = hitTestWindows(J.gazeX, J.gazeY);
