@@ -31,6 +31,10 @@
 
 <!-- GAZE CURSOR -->
 <div id="gaze">
+  <svg class="dwell-ring" viewBox="0 0 36 36" width="36" height="36">
+    <circle class="dwell-track" cx="18" cy="18" r="16"></circle>
+    <circle class="dwell-fill" id="dwell-fill" cx="18" cy="18" r="16"></circle>
+  </svg>
   <div class="gaze-ring" id="gaze-ring">
     <div class="gaze-dot"></div>
   </div>
@@ -102,6 +106,7 @@
 <script src="jarvis-fusion.js"></script>
 <script src="jarvis-hands.js"></script>
 <script src="jarvis-windows.js"></script>
+<script src="jarvis-dwell.js"></script>
 <script src="jarvis-ai.js"></script>
 </body>
-  </html>
+</html>
