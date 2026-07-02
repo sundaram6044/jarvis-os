@@ -176,8 +176,9 @@ function onHandResults(results){
 
     if(nowPinching && !J.pinchActive && !J.pinchCooldown){
       J.pinchActive = true; J.pinchCooldown = true;
-      var px = mxf(ix.x)*W, py = ix.y*H;
-      onPinch(px, py, g?g.label:'');
+      // Use the magnet-snapped display position, not raw finger position —
+      // this keeps pinch consistent with what the cursor visually shows
+      onPinch(J.dispX, J.dispY, g?g.label:'');
       setTimeout(function(){ J.pinchCooldown = false; }, 400);
     } else if(!nowPinching){ J.pinchActive = false; }
 
@@ -368,4 +369,4 @@ function detectGesture(lm, mxf){
 // ── PINCH ACTION (now routed through fusion) ──────────────
 function onPinch(x, y, gesture){
   FUSION.trigger('hand', 'pinch', x, y);
-    }
+      }
